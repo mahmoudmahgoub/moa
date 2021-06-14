@@ -26,6 +26,12 @@ import com.yahoo.labs.samoa.instances.Instance;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import moa.classifiers.core.driftdetection.Employee;
 import moa.core.Example;
 import moa.core.Measurement;
 import moa.core.ObjectRepository;
@@ -156,11 +162,19 @@ public class EvaluateConceptDrift extends ConceptDriftMainTask{
         while (stream.hasMoreInstances()
                 && ((maxInstances < 0) || (instancesProcessed < maxInstances))
                 && ((maxSeconds < 0) || (secondsElapsed < maxSeconds))) {
-            Example trainInst = (Example) stream.nextInstance();
-            Example testInst = trainInst; 
-            int trueClass = (int) ((Instance)trainInst.getData()).classValue();
+            Example<Instance> trainInst =  stream.nextInstance();
+            int i=0;
+            List< Example<Instance> > mytrainInst = Arrays.asList(trainInst,trainInst,stream.nextInstance());
+            Example<Instance> testInst = trainInst;
+            int trueClass = (int) (trainInst.getData()).classValue();
             //testInst.setClassMissing();
             double[] prediction = learner.getVotesForInstance(testInst);
+            Map<List<Double>, Long> collect = mytrainInst.stream().collect(
+                    Collectors.groupingBy(zz -> Arrays.asList(zz.getData().value(0), zz.getData().value(1)), Collectors.counting()));//Collectors.groupingBy(Employee::getName,Collectors.counting())));//Collectors.mapping(Employee::getName,Collectors.toList())));
+//(byDept).forEach((k, v) -> System.out.println("DeptId:" +k +"   " +
+              //      v));
+            //Example::getData
+
             if (prediction[0] ==1 ){ //Change detected
                 this.getEventsList().add(new ClusterEvent(this, instancesProcessed, "Detected Change", "Drift"));
             }

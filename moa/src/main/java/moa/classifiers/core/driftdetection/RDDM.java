@@ -42,6 +42,10 @@ import com.github.javacliparser.IntOption;
 import com.github.javacliparser.FloatOption;
 import moa.tasks.TaskMonitor;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 public class RDDM extends AbstractChangeDetector {
     private static final long serialVersionUID = -489867468386968209L;
 
@@ -126,6 +130,7 @@ public class RDDM extends AbstractChangeDetector {
 
     @Override
     public void input(double prediction) {   // In MOA, 1.0=false, 0.0=true.
+       // Arrays.stream(new int [] {5,5}).boxed().collect(Collectors.groupingBy(i->i));
         if (!this.isInitialized) {
             initialize();
             this.isInitialized = true;
