@@ -118,6 +118,7 @@ public class SDDM extends AbstractChangeDetector {
     private int bins = 20;
     private int subSampleFraction = 1;
     private int width;
+    public ArrayList<Instance> window;
     //int predictionOption = this.leafpredictionOption.getChosenIndex();
 
     public SDDM() {
