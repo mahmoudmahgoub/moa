@@ -21,21 +21,26 @@ package moa.classifiers.core.driftdetection;
 import com.github.javacliparser.FloatOption;
 import com.github.javacliparser.IntOption;
 import com.github.javacliparser.MultiChoiceOption;
-import com.github.javacliparser.StringOption;
 import com.yahoo.labs.samoa.instances.Instance;
+import moa.classifiers.core.driftdetection.sddmutils.Reader;
 import moa.core.Example;
 import moa.core.ObjectRepository;
+import moa.streams.ArffFileStream;
 import moa.tasks.TaskMonitor;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
 
 /**
@@ -223,6 +228,14 @@ public class SDDM extends AbstractChangeDetector {
     }
 
     @Override
+    public void input(Instance prediction) {
+
+        System.out.println("Hello Taa7");
+
+
+}
+
+    @Override
     public void getDescription(StringBuilder sb, int indent) {
         // TODO Auto-generated method stub
     }
@@ -258,13 +271,109 @@ public class SDDM extends AbstractChangeDetector {
         for column in data.columns:
             if column != self.target_column:
     self.meta_data[column] = np.concatenate(([np.NINF], np.sort(data[column].unique()), [np.inf]))*/
+//----------------------
 
+
+//////////////////////
+
+
+    static class result_row{
+    String col;
+        double covariate_shift;
+        double class_shift;
+        double concept_drift;
+        double posterior_drift;
+        double conditional_covariate_distribution;
+    }
+    static class grouping_taa7 {
+    List<Double> arr;
+    int no_elems;
+
+        public grouping_taa7(double arr_2[], int no_elems) {
+            this.arr = Arrays.stream(arr_2).boxed().collect(Collectors.toList());
+            this.no_elems = no_elems;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            grouping_taa7 that = (grouping_taa7) o;
+            return Objects.deepEquals( this.arr.subList(0,no_elems),that.arr.subList(0,that.no_elems));
+        }
+
+        @Override
+        public int hashCode() {
+            return this.arr.subList(0,no_elems).hashCode();
+        }
+    }
+    static List<BigDecimal> quantiles(BigDecimal start, BigDecimal end, int steps) {
+        BigDecimal step = end.subtract( start).divide(BigDecimal.valueOf(steps));
+        return IntStream
+                .rangeClosed(0, steps)
+                .boxed()
+                .map(i -> start.add(step.multiply(BigDecimal.valueOf(i))))
+                .collect(Collectors.toList());
+    }
     public static void main(String[] args) {
-        System.out.println("hji");
+        System.out.println(quantiles(BigDecimal.ZERO,BigDecimal.valueOf(1),20));
         DescriptiveStatistics stats = new DescriptiveStatistics();
+        stats.setPercentileImpl( new Percentile().
+                withEstimationType( Percentile.EstimationType.R_7 ) );
+        List < Instance > file_data = new ArrayList<>();
+        List < Instance > train;
+        List < Instance > test;
+        moa.streams.ArffFileStream stream = new ArffFileStream("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\sine1\\sine1_w_50_n_0.1_102.arff", -1);
+       // Instance newInst;
 
+        while (stream.hasMoreInstances() ) {
+            // newInst = stream.nextInstance().getData();
+             file_data.add(stream.nextInstance().getData());
+             System.out.println(6);
+        }
+
+        int time_step =2,drift =1;
+        Reader SDDMReader = new Reader();
+        List<result_row[]> z = SDDMReader.npRangeStream(time_step, file_data.size(), drift).map(i -> {
+            List<Instance> train2 = file_data.subList(i - time_step, i);
+            List<Instance> test2 = file_data.subList(i, i + drift);
+            return new result_row[5];
+        }).collect(Collectors.toList());
+        for(int i:SDDMReader.npRange(time_step,file_data.size(),drift)){
+        //we can use for loop instead of nprange
+        //for(int i = time_step;i<file_data.size();i=+drift){
+            train = file_data.subList(i-time_step,i);
+            test = file_data.subList(i,i+drift);
+            for(int ii=0; ii<train.get(0).numAttributes();ii++){
+                int finalIi = ii;
+                stats.clear();
+                train.forEach(t->stats.addValue(t.value(finalIi)));//add 1,2,3,4,5,6,7,8,9,10 to stats
+                List<Double> zzz = quantiles(BigDecimal.ZERO, BigDecimal.valueOf(1), 5).stream().filter(q -> q.compareTo(BigDecimal.ZERO) > 0).map(q -> stats.getPercentile(q.doubleValue() * 100)).collect(Collectors.toList());
+                System.out.println(quantiles(BigDecimal.ZERO,BigDecimal.valueOf(1),20));
+            }
+
+
+            System.out.println(quantiles(BigDecimal.ZERO,BigDecimal.valueOf(1),20));
+          //   train.stream().collect(Collectors.groupingBy(instance -> new grouping_taa7(instance.toDoubleArray(),2)));
+            //train.stream().collect(Collectors.groupingBy(instance -> instance.value(0)+instance.value(1)));
+           // System.out.println(train.stream().collect(Collectors.groupingBy(instance -> new AbstractMap.SimpleEntry<>(instance.value(0),instance.value(1)))));
+            Map<grouping_taa7, List<Instance>> zz = train.stream().collect(Collectors.groupingBy(instance -> new grouping_taa7(instance.toDoubleArray(), 2)));;
+            Map<grouping_taa7, Long> mtrain = train.stream().collect(Collectors.groupingBy(instance -> new grouping_taa7(instance.toDoubleArray(), 2), Collectors.counting()));
+            Map<grouping_taa7, Long> mtest = test.stream().collect(Collectors.groupingBy(instance -> new grouping_taa7(instance.toDoubleArray(), 2), Collectors.counting()));
+            Map<grouping_taa7, ArrayList<Long>> mtest_mtrain = new HashMap<grouping_taa7,ArrayList<Long>>();
+            mtrain.forEach((key,value)->mtest_mtrain.computeIfAbsent(key,k -> new ArrayList<>()).add(value));
+            mtest.forEach((key,value)->mtest_mtrain.computeIfAbsent(key,k -> new ArrayList<>()).add(value));
+
+            System.out.println( mtest_mtrain.values().toArray()); // returns an array of values
+            kullback_leibler_divergence(mtest_mtrain);
+
+
+            System.out.println(  train.stream().collect(Collectors.groupingBy(instance -> new grouping_taa7(instance.toDoubleArray(),2))).size());
+        }
+            //    train = data.iloc[i-time_step:i] #time step is window size lenght drift window slide
+            //    test = data.iloc[i:i+length_drift]
         IntStream.rangeClosed(1, 4).forEach(i->stats.addValue(i));//add 1,2,3,4,5,6,7,8,9,10 to stats
-
+        IntStream.rangeClosed(6, 15).filter(i -> (i-6)%2 == 0).forEach(System.out::println);
         //System.out.println("max value "+stats.getMax());//max value 10.0
 
         //System.out.println("min value "+stats.getMin());//min value 1.0
@@ -339,7 +448,40 @@ public class SDDM extends AbstractChangeDetector {
         return Helper.get_distance(grouped["count_train"], grouped["count_test"], normalization_coeff=self.normalization_coeff,
     method=self.distance_measure)*/
 //**********************************HELPER*****************************************//
+private static double kullback_leibler_divergence( Map<grouping_taa7, ArrayList<Long>> vals) {
+
+    double kld = 0;
+    for( ArrayList<Long> value : vals.values())
+    {
+        if (value.size()<2)
+            continue;
+        kld += value.get(0) * Math.log(value.get(0) / value.get(1));
+    }
+
+
+    /*vals.values().stream()
+            .filter(i -> i.size() ==2 )
+            .mapToDouble(value ->  value.get(0) * Math.log(value.get(0) / value.get(1)))
+            .sum();*/
+   /* double[] kld2 = new double [1];
+vals.forEach((key,value)->
+{
+    if (value.size() > 1)
+       // continue;
+
+        kld2[0] += value.get(0) * Math.log(value.get(0) / value.get(1));
+});
+    */
+        return kld / Math.log(2);
+
+
+    }
+
+    /*
+
     private static double kullback_leibler_divergence(double[] arr1, double[] arr2) {
+
+        mtest_mtrain.forEach((key,value)->);
         double kld = 0;
         for (int i = 0; i < arr1.length; i++) {
             if (arr1[i] == 0 || arr2[i] == 0)
@@ -351,4 +493,5 @@ public class SDDM extends AbstractChangeDetector {
 
 
     }
+     */
 }

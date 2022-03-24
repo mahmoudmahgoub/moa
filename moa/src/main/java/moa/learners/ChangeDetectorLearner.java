@@ -20,6 +20,8 @@ package moa.learners;
 
 import com.yahoo.labs.samoa.instances.Instance;
 import moa.classifiers.AbstractClassifier;
+import moa.classifiers.core.driftdetection.DDM;
+import moa.classifiers.core.driftdetection.SDDM;
 import moa.core.Measurement;
 import moa.classifiers.core.driftdetection.ChangeDetector;
 import moa.options.ClassOption;
@@ -52,7 +54,13 @@ public class ChangeDetectorLearner extends AbstractClassifier {
 
     @Override
     public void trainOnInstanceImpl(Instance inst) {
-        this.driftDetectionMethod.input(inst.value(0));
+
+        if (driftDetectionMethod instanceof SDDM) {
+            this.driftDetectionMethod.input(inst);
+        } else {
+            this.driftDetectionMethod.input(inst.value(0));
+        }
+
 
     }
 
