@@ -1,10 +1,122 @@
 package moa.classifiers.core.driftdetection;
 
 import com.yahoo.labs.samoa.instances.Instance;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class SDDMAlgo {
+
+
+    private ArrayList<Integer> numeric_columns = new ArrayList<>();  // the columns that I will use in  binData and __extract_metadata
+    private int numsBins;
+    void detect_concept_drift (){
+
+    }
+
+    void extract_metadata (){
+      //remove_ignore_columns todo
+
+
+    }
+
+    public SDDMAlgo( int numsBins) {
+        this.numsBins = numsBins;
+    }
+
+    List<BigDecimal> binsGenerator(int numBins) {
+        BigDecimal start = BigDecimal.ZERO;
+        BigDecimal end =  BigDecimal.ONE;
+
+        BigDecimal step = end.subtract( start).divide(BigDecimal.valueOf(numBins));
+        return IntStream
+                .rangeClosed(0, numBins)
+                .boxed()
+                .map(i -> start.add(step.multiply(BigDecimal.valueOf(i))))
+                .collect(Collectors.toList());
+        //maybe need check for that bins list values <=1 todo
+    }
+
+    //assign number for every interval using intervalsLimits
+    List<NavigableMap<Double, Double>> intervalsBuilder(List<List<Double>> intervalsLimitsLists)
+    {
+        /*
+        todo if I used sample like in python "bin" method:  data.sample(frac = <>),
+         I will need to add -inf and inf intervals as I don't guarantee that I have the min and max values in the sample
+        */
+        List<NavigableMap<Double, Double>> maps = new ArrayList<>();
+
+        for (List<Double> intervalsLimits : intervalsLimitsLists) {
+            double i = 0;
+            NavigableMap<Double, Double> map = new TreeMap<Double, Double>();
+            for(double Limit:intervalsLimits) {
+                map.put(Limit, i);
+                i++;
+            }
+          maps.add(map);
+
+        }
+        return maps;
+    }
+
+    List<List<Double>> dataQuantiles( List<Instance> data){ //todo we can make this function work only on 1D and making the 2D in the calling Context
+        DescriptiveStatistics stats = new DescriptiveStatistics();
+
+        stats.setPercentileImpl( new Percentile().
+                withEstimationType( Percentile.EstimationType.R_7 ) );
+
+
+        int features = data.get(0).numAttributes();
+        List<List<Double>> quantilesOfData = new ArrayList<>();
+
+        for(int i=0; i<features -1 ;i++){ // need to make a filter to choose only numeric cols, now I assume all the cols except last one is numeric todo
+            int finalI = i; //to use within Lambda expression
+            stats.clear();
+            data.forEach(inst->stats.addValue(inst.value(finalI)));
+            List<Double> temp = binsGenerator(numsBins).stream().filter(q -> q.compareTo(BigDecimal.ZERO) > 0)
+                    .map(q -> stats.getPercentile(q.doubleValue() * 100)).collect(Collectors.toList());
+            temp.add(0, data.get(0).value(finalI));
+            quantilesOfData.add(temp);
+        }
+     return quantilesOfData;
+    }
+
+    void dataToIntervals(List<Instance> data){
+
+        List <NavigableMap<Double, Double>> IntervalsMappers = intervalsBuilder(dataQuantiles(data));
+        int data_size =data.size();
+        int features = data.get(0).numAttributes();
+
+        double [][] instancesIntervals = new double[data_size][features];
+        for(int i=0; i<features -1 ;i++){
+            NavigableMap<Double, Double> mapper = IntervalsMappers.get(i);
+            int finalI = i;
+            List<Double> ll = data.stream().map(inst -> mapper.floorEntry(inst.value(finalI)).getValue()).collect(Collectors.toList());
+            System.out.println(ll);
+        }
+
+
+
+}
+   // private:
+   // train_data = train_data
+   // self.test_data = test_data
+  /*  def detect_concept_drift(self):
+            self.__extract_metadata(self.train_data[0])
+
+    test_binned_data = self.__bin_data(self.test_data[0].copy(), subsample = False)
+
+    covariate_columns = np.array(test_binned_data.columns)
+            if(self.target_column != ""):
+    covariate_columns = np.delete(covariate_columns, np.where(covariate_columns == self.target_column))
+
 
     static void GetJointShift(List<Instance> train, List < Instance > test){
        // if len(cols) == 1 and cols[0] == "":  return 0 //todo

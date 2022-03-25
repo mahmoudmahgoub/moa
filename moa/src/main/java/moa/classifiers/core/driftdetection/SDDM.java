@@ -30,14 +30,8 @@ import moa.tasks.TaskMonitor;
 
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
@@ -307,6 +301,20 @@ public class SDDM extends AbstractChangeDetector {
             return this.arr.subList(0,no_elems).hashCode();
         }
     }
+
+    static NavigableMap<Double, Double> intervals(List<Double> zzz)
+    {
+
+        NavigableMap<Double, Double> map = new TreeMap<Double, Double>();
+        double i = 0;
+        for (double s : zzz) {
+            map.put(s, i);
+            i++;
+        }
+        return map;
+
+    }
+
     static List<BigDecimal> quantiles(BigDecimal start, BigDecimal end, int steps) {
         BigDecimal step = end.subtract( start).divide(BigDecimal.valueOf(steps));
         return IntStream
@@ -316,7 +324,10 @@ public class SDDM extends AbstractChangeDetector {
                 .collect(Collectors.toList());
     }
     public static void main(String[] args) {
-        System.out.println(quantiles(BigDecimal.ZERO,BigDecimal.valueOf(1),20));
+
+        SDDMAlgo sddmObj = new SDDMAlgo(5);
+
+
         DescriptiveStatistics stats = new DescriptiveStatistics();
         stats.setPercentileImpl( new Percentile().
                 withEstimationType( Percentile.EstimationType.R_7 ) );
@@ -343,13 +354,20 @@ public class SDDM extends AbstractChangeDetector {
         //we can use for loop instead of nprange
         //for(int i = time_step;i<file_data.size();i=+drift){
             train = file_data.subList(i-time_step,i);
+            sddmObj.dataToIntervals(train);
             test = file_data.subList(i,i+drift);
             for(int ii=0; ii<train.get(0).numAttributes();ii++){
                 int finalIi = ii;
                 stats.clear();
                 train.forEach(t->stats.addValue(t.value(finalIi)));//add 1,2,3,4,5,6,7,8,9,10 to stats
                 List<Double> zzz = quantiles(BigDecimal.ZERO, BigDecimal.valueOf(1), 5).stream().filter(q -> q.compareTo(BigDecimal.ZERO) > 0).map(q -> stats.getPercentile(q.doubleValue() * 100)).collect(Collectors.toList());
-                System.out.println(quantiles(BigDecimal.ZERO,BigDecimal.valueOf(1),20));
+                zzz.add(0, train.get(0).value(finalIi));
+
+
+                NavigableMap<Double, Double> xxx = intervals(zzz);
+
+                List<Double> cat = train.stream().map(z4 -> xxx.floorEntry(z4.value(finalIi)).getValue()).collect(Collectors.toList());
+                System.out.println(cat);
             }
 
 
