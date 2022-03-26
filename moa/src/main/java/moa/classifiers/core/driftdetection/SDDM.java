@@ -279,28 +279,7 @@ public class SDDM extends AbstractChangeDetector {
         double posterior_drift;
         double conditional_covariate_distribution;
     }
-    static class grouping_taa7 {
-    List<Double> arr;
-    int no_elems;
 
-        public grouping_taa7(double arr_2[], int no_elems) {
-            this.arr = Arrays.stream(arr_2).boxed().collect(Collectors.toList());
-            this.no_elems = no_elems;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            grouping_taa7 that = (grouping_taa7) o;
-            return Objects.deepEquals( this.arr.subList(0,no_elems),that.arr.subList(0,that.no_elems));
-        }
-
-        @Override
-        public int hashCode() {
-            return this.arr.subList(0,no_elems).hashCode();
-        }
-    }
 
     static NavigableMap<Double, Double> intervals(List<Double> zzz)
     {
@@ -335,12 +314,9 @@ public class SDDM extends AbstractChangeDetector {
         List < Instance > train;
         List < Instance > test;
         moa.streams.ArffFileStream stream = new ArffFileStream("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\sine1\\sine1_w_50_n_0.1_102.arff", -1);
-       // Instance newInst;
 
         while (stream.hasMoreInstances() ) {
-            // newInst = stream.nextInstance().getData();
              file_data.add(stream.nextInstance().getData());
-             System.out.println(6);
         }
 
         int time_step =2,drift =1;
@@ -351,11 +327,12 @@ public class SDDM extends AbstractChangeDetector {
             return new result_row[5];
         }).collect(Collectors.toList());
         for(int i:SDDMReader.npRange(time_step,file_data.size(),drift)){
-        //we can use for loop instead of nprange
-        //for(int i = time_step;i<file_data.size();i=+drift){
             train = file_data.subList(i-time_step,i);
-            sddmObj.dataToIntervals(train);
             test = file_data.subList(i,i+drift);
+            List<List<Double>> binnedTrain = sddmObj.binData(train);
+            List<List<Double>> binnedTest = sddmObj.binData(test);
+            sddmObj.getJointShift(binnedTrain,binnedTest);
+
             for(int ii=0; ii<train.get(0).numAttributes();ii++){
                 int finalIi = ii;
                 stats.clear();
@@ -375,18 +352,7 @@ public class SDDM extends AbstractChangeDetector {
           //   train.stream().collect(Collectors.groupingBy(instance -> new grouping_taa7(instance.toDoubleArray(),2)));
             //train.stream().collect(Collectors.groupingBy(instance -> instance.value(0)+instance.value(1)));
            // System.out.println(train.stream().collect(Collectors.groupingBy(instance -> new AbstractMap.SimpleEntry<>(instance.value(0),instance.value(1)))));
-            Map<grouping_taa7, List<Instance>> zz = train.stream().collect(Collectors.groupingBy(instance -> new grouping_taa7(instance.toDoubleArray(), 2)));;
-            Map<grouping_taa7, Long> mtrain = train.stream().collect(Collectors.groupingBy(instance -> new grouping_taa7(instance.toDoubleArray(), 2), Collectors.counting()));
-            Map<grouping_taa7, Long> mtest = test.stream().collect(Collectors.groupingBy(instance -> new grouping_taa7(instance.toDoubleArray(), 2), Collectors.counting()));
-            Map<grouping_taa7, ArrayList<Long>> mtest_mtrain = new HashMap<grouping_taa7,ArrayList<Long>>();
-            mtrain.forEach((key,value)->mtest_mtrain.computeIfAbsent(key,k -> new ArrayList<>()).add(value));
-            mtest.forEach((key,value)->mtest_mtrain.computeIfAbsent(key,k -> new ArrayList<>()).add(value));
 
-            System.out.println( mtest_mtrain.values().toArray()); // returns an array of values
-            kullback_leibler_divergence(mtest_mtrain);
-
-
-            System.out.println(  train.stream().collect(Collectors.groupingBy(instance -> new grouping_taa7(instance.toDoubleArray(),2))).size());
         }
             //    train = data.iloc[i-time_step:i] #time step is window size lenght drift window slide
             //    test = data.iloc[i:i+length_drift]
@@ -397,10 +363,6 @@ public class SDDM extends AbstractChangeDetector {
         //System.out.println("min value "+stats.getMin());//min value 1.0
 
         //System.out.println("mean value "+stats.getMean());//mean value 5.5
-
-        System.out.println("50% value "+stats.getPercentile(50));//75% value 8.25
-
-        System.out.println("25% value "+stats.getPercentile(25));//25% value 2.75
 
         List < Employee > employees = Arrays.asList(
                 new Employee(1, 10, "Chandra"), new Employee(1, 20, "Rajesh"),
@@ -466,34 +428,7 @@ public class SDDM extends AbstractChangeDetector {
         return Helper.get_distance(grouped["count_train"], grouped["count_test"], normalization_coeff=self.normalization_coeff,
     method=self.distance_measure)*/
 //**********************************HELPER*****************************************//
-private static double kullback_leibler_divergence( Map<grouping_taa7, ArrayList<Long>> vals) {
 
-    double kld = 0;
-    for( ArrayList<Long> value : vals.values())
-    {
-        if (value.size()<2)
-            continue;
-        kld += value.get(0) * Math.log(value.get(0) / value.get(1));
-    }
-
-
-    /*vals.values().stream()
-            .filter(i -> i.size() ==2 )
-            .mapToDouble(value ->  value.get(0) * Math.log(value.get(0) / value.get(1)))
-            .sum();*/
-   /* double[] kld2 = new double [1];
-vals.forEach((key,value)->
-{
-    if (value.size() > 1)
-       // continue;
-
-        kld2[0] += value.get(0) * Math.log(value.get(0) / value.get(1));
-});
-    */
-        return kld / Math.log(2);
-
-
-    }
 
     /*
 

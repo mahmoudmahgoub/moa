@@ -3,12 +3,10 @@ package moa.classifiers.core.driftdetection;
 import com.yahoo.labs.samoa.instances.Instance;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
+import sun.plugin.javascript.navig.Array;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -49,21 +47,22 @@ public class SDDMAlgo {
     {
         /*
         todo if I used sample like in python "bin" method:  data.sample(frac = <>),
-         I will need to add -inf and inf intervals as I don't guarantee that I have the min and max values in the sample
+         I will need to add inf value to adjust the last interval: (max:inf] as I don't guarantee that I have the min and max values in the sample
+         (-inf,min] is already here because of using function ceilingEntry when I use the Mapper
         */
-        List<NavigableMap<Double, Double>> maps = new ArrayList<>();
+        List<NavigableMap<Double, Double>> mappers = new ArrayList<>();
 
         for (List<Double> intervalsLimits : intervalsLimitsLists) {
             double i = 0;
-            NavigableMap<Double, Double> map = new TreeMap<Double, Double>();
+            NavigableMap<Double, Double> mapper = new TreeMap<Double, Double>();
             for(double Limit:intervalsLimits) {
-                map.put(Limit, i);
+                mapper.put(Limit, i);
                 i++;
             }
-          maps.add(map);
+            mappers.add(mapper);
 
         }
-        return maps;
+        return mappers;
     }
 
     List<List<Double>> dataQuantiles( List<Instance> data){ //todo we can make this function work only on 1D and making the 2D in the calling Context
@@ -82,29 +81,135 @@ public class SDDMAlgo {
             data.forEach(inst->stats.addValue(inst.value(finalI)));
             List<Double> temp = binsGenerator(numsBins).stream().filter(q -> q.compareTo(BigDecimal.ZERO) > 0)
                     .map(q -> stats.getPercentile(q.doubleValue() * 100)).collect(Collectors.toList());
-            temp.add(0, data.get(0).value(finalI));
+            double min =data.get(0).value(finalI);
+            for(Instance val:data){
+                if(val.value(finalI)<min){
+                    min = val.value(finalI);
+                }
+            }
+            temp.add(0,min);
             quantilesOfData.add(temp);
         }
      return quantilesOfData;
     }
 
-    void dataToIntervals(List<Instance> data){
+    List<List<Double>> binData(List<Instance> data){
 
         List <NavigableMap<Double, Double>> IntervalsMappers = intervalsBuilder(dataQuantiles(data));
         int data_size =data.size();
         int features = data.get(0).numAttributes();
 
-        double [][] instancesIntervals = new double[data_size][features];
+        List<List<Double>> dataBinned = new ArrayList<>();
+        double [][] arrDataBinned = new double[data_size][features];
         for(int i=0; i<features -1 ;i++){
             NavigableMap<Double, Double> mapper = IntervalsMappers.get(i);
             int finalI = i;
-            List<Double> ll = data.stream().map(inst -> mapper.floorEntry(inst.value(finalI)).getValue()).collect(Collectors.toList());
-            System.out.println(ll);
+            List<Double> mappedData = data.stream().map(inst -> mapper.ceilingEntry(inst.value(finalI)).getValue()).collect(Collectors.toList());
+            int row = 0;
+            for(double val:mappedData){
+                arrDataBinned[row][finalI] = val;
+                row++;
+            }
+        }
+         //last col data
+        int row = 0;
+        for(Instance inst:data){
+            arrDataBinned[row][features-1] = inst.value(features-1);
+            row++;
         }
 
 
-
+        for (int i = 0; i<arrDataBinned.length; i++){
+            List<Double> temp = new ArrayList<>();
+            for (int j = 0; j<arrDataBinned[i].length; j++){
+                temp.add(arrDataBinned[i][j]);
+            }
+            dataBinned.add(temp);
+        }
+        System.out.println(arrDataBinned);
+        System.out.println(dataBinned);
+        return dataBinned;
 }
+
+    static class InstancesGrouping {
+        List<Double> arr;
+        int noElems;
+
+        public InstancesGrouping(List<Double> arr, int noElems) {
+            this.arr = arr;
+            this.noElems = noElems;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            InstancesGrouping that = (InstancesGrouping) o;
+            return Objects.deepEquals( this.arr.subList(0,noElems),that.arr.subList(0,that.noElems));
+        }
+
+        @Override
+        public int hashCode() {
+            return this.arr.subList(0,noElems).hashCode();
+        }
+    }
+
+    private static double kullback_leibler_divergence( Map<InstancesGrouping, ArrayList<Long>> vals) {
+
+        double kld = 0;
+        for( ArrayList<Long> value : vals.values())
+        {
+            if (value.size()<2)
+                continue;
+            kld += value.get(0) * Math.log(value.get(0) / value.get(1));
+        }
+        return kld / Math.log(2);
+
+    }
+
+    void getJointShift(List<List<Double>> trainData,List<List<Double>>  testData){ //todo add cols to method params
+        // if len(cols) == 1 and cols[0] == "":  return 0 //todo add this check which is found in python
+
+        Map<InstancesGrouping, Long> groupedTrain = trainData.stream().collect(Collectors.groupingBy(instance -> new InstancesGrouping(instance, 2), Collectors.counting()));
+        Map<InstancesGrouping, Long> groupedTest = testData.stream().collect(Collectors.groupingBy(instance -> new InstancesGrouping(instance, 1), Collectors.counting()));
+        Map<InstancesGrouping, ArrayList<Long>> groupedTestTrain = new HashMap<InstancesGrouping,ArrayList<Long>>();
+        groupedTrain.forEach((key,value)->groupedTestTrain.computeIfAbsent(key,k -> new ArrayList<>()).add(value));
+        groupedTest.forEach((key,value)->groupedTestTrain.computeIfAbsent(key,k -> new ArrayList<>()).add(value));
+
+        System.out.println( groupedTestTrain.values().toArray()); // returns an array of values
+        kullback_leibler_divergence(groupedTestTrain);
+
+    }
+
+    /*        if len(cols) == 1 and cols[0] == "":
+            return 0
+
+    train = tr[cols]
+    test = te[cols]
+
+    cols = [c for c in cols]
+
+    grouped = pd.merge(train.groupby(cols).size().reset_index(name = 'count_train'),
+                            test.groupby(cols).size().reset_index(name = 'count_test'),
+    on = cols, how="outer")
+    grouped = grouped[["count_train", "count_test"]]
+
+    grouped['count_train'] = grouped['count_train'].fillna(0)
+    grouped['count_test'] = grouped['count_test'].fillna(0)
+
+        return Helper.get_distance(grouped["count_train"], grouped["count_test"], normalization_coeff=self.normalization_coeff,
+    method=self.distance_measure)
+
+    def __getJointResults(train, test, covariate_columns):
+    results = {}
+    normalize = 1
+
+    results["covariate_shift"] = self.__get_joint_shift(train, test, covariate_columns)/normalize #covariate_columns
+    results["class_shift"] = self.__get_joint_shift(train, test, [self.target_column])/normalize
+    results["concept_drift"] = self.__get_joint_shift(train, test, test.columns)/normalize #test.columns
+
+    results["posterior_drift"] = self.__get_posterior_drift(train, test, covariate_columns)/normalize
+    results["conditional_covariate_distribution"] = self.__get_conditional_covariate_drift(train, test, covariate_columns)/normalize
    // private:
    // train_data = train_data
    // self.test_data = test_data
@@ -117,11 +222,7 @@ public class SDDMAlgo {
             if(self.target_column != ""):
     covariate_columns = np.delete(covariate_columns, np.where(covariate_columns == self.target_column))
 
-
-    static void GetJointShift(List<Instance> train, List < Instance > test){
-       // if len(cols) == 1 and cols[0] == "":  return 0 //todo
-
-    }
+*/
    /* def __get_joint_shift(self, tr, te, cols):
 
 
