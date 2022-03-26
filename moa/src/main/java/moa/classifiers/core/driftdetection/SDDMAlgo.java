@@ -1,9 +1,9 @@
 package moa.classifiers.core.driftdetection;
 
 import com.yahoo.labs.samoa.instances.Instance;
+import moa.recommender.rc.utils.Hash;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
-import sun.plugin.javascript.navig.Array;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -15,6 +15,8 @@ public class SDDMAlgo {
 
     private ArrayList<Integer> numeric_columns = new ArrayList<>();  // the columns that I will use in  binData and __extract_metadata
     private int numsBins;
+    private double normalizationCoeff;
+    private List <NavigableMap<Double, Double>> IntervalsMappers;
     void detect_concept_drift (){
 
     }
@@ -25,8 +27,10 @@ public class SDDMAlgo {
 
     }
 
-    public SDDMAlgo( int numsBins) {
+    public SDDMAlgo(int numsBins, long normalizationCoeff) {
         this.numsBins = numsBins;
+        this.normalizationCoeff = normalizationCoeff;
+        IntervalsMappers =new ArrayList<>();
     }
 
     List<BigDecimal> binsGenerator(int numBins) {
@@ -43,26 +47,23 @@ public class SDDMAlgo {
     }
 
     //assign number for every interval using intervalsLimits
-    List<NavigableMap<Double, Double>> intervalsBuilder(List<List<Double>> intervalsLimitsLists)
+    void binsIntervalsBuilder(List<Instance> data) //metadata
     {
-        /*
-        todo if I used sample like in python "bin" method:  data.sample(frac = <>),
-         I will need to add inf value to adjust the last interval: (max:inf] as I don't guarantee that I have the min and max values in the sample
-         (-inf,min] is already here because of using function ceilingEntry when I use the Mapper
-        */
-        List<NavigableMap<Double, Double>> mappers = new ArrayList<>();
+        IntervalsMappers.clear();
+        List<List<Double>> intervalsLimitsLists = dataQuantiles(data);
 
+        /*(-inf,min] is already here because of using function ceilingEntry when I use the Mapper*/
         for (List<Double> intervalsLimits : intervalsLimitsLists) {
             double i = 0;
-            NavigableMap<Double, Double> mapper = new TreeMap<Double, Double>();
+            NavigableMap<Double, Double> mapper = new TreeMap<>();
             for(double Limit:intervalsLimits) {
                 mapper.put(Limit, i);
                 i++;
             }
-            mappers.add(mapper);
+            mapper.put(Double.MAX_VALUE,i); //for range (max:inf] //todo check
+            IntervalsMappers.add(mapper);
 
         }
-        return mappers;
     }
 
     List<List<Double>> dataQuantiles( List<Instance> data){ //todo we can make this function work only on 1D and making the 2D in the calling Context
@@ -93,9 +94,11 @@ public class SDDMAlgo {
      return quantilesOfData;
     }
 
-    List<List<Double>> binData(List<Instance> data){
+    List<List<Double>> binData(List<Instance> data) throws Exception {
 
-        List <NavigableMap<Double, Double>> IntervalsMappers = intervalsBuilder(dataQuantiles(data));
+        if (IntervalsMappers.size() == 0) {
+            throw new Exception("IntervalMappers are not build yet, please build them using intervalsBuilder");
+        }
         int data_size =data.size();
         int features = data.get(0).numAttributes();
 
@@ -154,16 +157,54 @@ public class SDDMAlgo {
         }
     }
 
-    private static double kullback_leibler_divergence( Map<InstancesGrouping, ArrayList<Long>> vals) {
+    private Map<InstancesGrouping, ArrayList<Double>> dataNormalize(Map<InstancesGrouping, ArrayList<Long>> data){
+        Map<InstancesGrouping, ArrayList<Double>> normalizedData = new HashMap<>();
+        double [][] arrnormalizedData = new double[data.size()][2];
 
-        double kld = 0;
-        for( ArrayList<Long> value : vals.values())
-        {
-            if (value.size()<2)
-                continue;
-            kld += value.get(0) * Math.log(value.get(0) / value.get(1));
+        for(int j = 0; j<2;j++) {
+            double arr_sum = 0 ;
+            for (ArrayList<Long> value : data.values()) {
+                arr_sum +=value.get(j);
+            }
+            double sumFactor = arr_sum + normalizationCoeff * data.size();
+            int i = 0;
+            for (InstancesGrouping key:data.keySet()) {
+                arrnormalizedData[i][j] = (data.get(key).get(j) + normalizationCoeff) / (sumFactor + 2);
+                i++;
+            }
+
         }
-        return kld / Math.log(2);
+         int i = 0;
+        for (InstancesGrouping key:data.keySet()){
+            ArrayList<Double> temp = new ArrayList<>();
+            for (int j = 0; j<arrnormalizedData[i].length; j++){
+                temp.add(arrnormalizedData[i][j]);
+            }
+            normalizedData.put(key, temp);
+            i++;
+        }
+
+        return normalizedData;
+    }
+
+
+
+    double get_distance(Map<InstancesGrouping, ArrayList<Long>> data) //todo add method in params list: method = "kld"
+    {
+        return kullback_leibler_divergence(dataNormalize(data));
+    }
+    private double kullback_leibler_divergence( Map<InstancesGrouping, ArrayList<Double>> vals) {
+
+        double kld = 0, kld1 = 0, kld2 = 0;
+        for( ArrayList<Double> value : vals.values())
+        {
+            if (value.get(0) == 0 || value.get(1) == 0)
+                continue;
+            kld1 += value.get(0) * Math.log(value.get(0) / value.get(1));
+            kld2 += value.get(1) * Math.log(value.get(1) / value.get(0));
+        }
+        kld = (kld1 / Math.log(2) + kld2 / Math.log(2))/2;
+        return kld;
 
     }
 
@@ -171,14 +212,18 @@ public class SDDMAlgo {
         // if len(cols) == 1 and cols[0] == "":  return 0 //todo add this check which is found in python
 
         Map<InstancesGrouping, Long> groupedTrain = trainData.stream().collect(Collectors.groupingBy(instance -> new InstancesGrouping(instance, 2), Collectors.counting()));
-        Map<InstancesGrouping, Long> groupedTest = testData.stream().collect(Collectors.groupingBy(instance -> new InstancesGrouping(instance, 1), Collectors.counting()));
+        Map<InstancesGrouping, Long> groupedTest = testData.stream().collect(Collectors.groupingBy(instance -> new InstancesGrouping(instance, 2), Collectors.counting()));
         Map<InstancesGrouping, ArrayList<Long>> groupedTestTrain = new HashMap<InstancesGrouping,ArrayList<Long>>();
         groupedTrain.forEach((key,value)->groupedTestTrain.computeIfAbsent(key,k -> new ArrayList<>()).add(value));
-        groupedTest.forEach((key,value)->groupedTestTrain.computeIfAbsent(key,k -> new ArrayList<>()).add(value));
-
+        groupedTest.forEach((key,value)->groupedTestTrain.computeIfAbsent(key,k -> new ArrayList<>(Arrays.asList(Long.valueOf(0)))).add(value)); //add 0 for missed train data to make pairs
+        for(ArrayList<Long> val: groupedTestTrain.values()) {
+            if (val.size() <2 )
+                val.add((long) 0); //add 0 for missed test data to make pairs
+        }
         System.out.println( groupedTestTrain.values().toArray()); // returns an array of values
-        kullback_leibler_divergence(groupedTestTrain);
 
+        get_distance(groupedTestTrain);
+        //kullback_leibler_divergence(groupedTestTrain);
     }
 
     /*        if len(cols) == 1 and cols[0] == "":

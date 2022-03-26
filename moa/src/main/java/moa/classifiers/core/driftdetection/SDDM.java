@@ -302,9 +302,9 @@ public class SDDM extends AbstractChangeDetector {
                 .map(i -> start.add(step.multiply(BigDecimal.valueOf(i))))
                 .collect(Collectors.toList());
     }
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
-        SDDMAlgo sddmObj = new SDDMAlgo(5);
+        SDDMAlgo sddmObj = new SDDMAlgo(5, 0);
 
 
         DescriptiveStatistics stats = new DescriptiveStatistics();
@@ -329,24 +329,11 @@ public class SDDM extends AbstractChangeDetector {
         for(int i:SDDMReader.npRange(time_step,file_data.size(),drift)){
             train = file_data.subList(i-time_step,i);
             test = file_data.subList(i,i+drift);
+            sddmObj.binsIntervalsBuilder(train);
+            System.out.println("test data:"+test);
             List<List<Double>> binnedTrain = sddmObj.binData(train);
             List<List<Double>> binnedTest = sddmObj.binData(test);
             sddmObj.getJointShift(binnedTrain,binnedTest);
-
-            for(int ii=0; ii<train.get(0).numAttributes();ii++){
-                int finalIi = ii;
-                stats.clear();
-                train.forEach(t->stats.addValue(t.value(finalIi)));//add 1,2,3,4,5,6,7,8,9,10 to stats
-                List<Double> zzz = quantiles(BigDecimal.ZERO, BigDecimal.valueOf(1), 5).stream().filter(q -> q.compareTo(BigDecimal.ZERO) > 0).map(q -> stats.getPercentile(q.doubleValue() * 100)).collect(Collectors.toList());
-                zzz.add(0, train.get(0).value(finalIi));
-
-
-                NavigableMap<Double, Double> xxx = intervals(zzz);
-
-                List<Double> cat = train.stream().map(z4 -> xxx.floorEntry(z4.value(finalIi)).getValue()).collect(Collectors.toList());
-                System.out.println(cat);
-            }
-
 
             System.out.println(quantiles(BigDecimal.ZERO,BigDecimal.valueOf(1),20));
           //   train.stream().collect(Collectors.groupingBy(instance -> new grouping_taa7(instance.toDoubleArray(),2)));
@@ -356,13 +343,6 @@ public class SDDM extends AbstractChangeDetector {
         }
             //    train = data.iloc[i-time_step:i] #time step is window size lenght drift window slide
             //    test = data.iloc[i:i+length_drift]
-        IntStream.rangeClosed(1, 4).forEach(i->stats.addValue(i));//add 1,2,3,4,5,6,7,8,9,10 to stats
-        IntStream.rangeClosed(6, 15).filter(i -> (i-6)%2 == 0).forEach(System.out::println);
-        //System.out.println("max value "+stats.getMax());//max value 10.0
-
-        //System.out.println("min value "+stats.getMin());//min value 1.0
-
-        //System.out.println("mean value "+stats.getMean());//mean value 5.5
 
         List < Employee > employees = Arrays.asList(
                 new Employee(1, 10, "Chandra"), new Employee(1, 20, "Rajesh"),
@@ -427,24 +407,5 @@ public class SDDM extends AbstractChangeDetector {
 
         return Helper.get_distance(grouped["count_train"], grouped["count_test"], normalization_coeff=self.normalization_coeff,
     method=self.distance_measure)*/
-//**********************************HELPER*****************************************//
 
-
-    /*
-
-    private static double kullback_leibler_divergence(double[] arr1, double[] arr2) {
-
-        mtest_mtrain.forEach((key,value)->);
-        double kld = 0;
-        for (int i = 0; i < arr1.length; i++) {
-            if (arr1[i] == 0 || arr2[i] == 0)
-                continue;
-            kld += arr1[i] * Math.log(arr1[i] / arr2[i]);
-
-        }
-        return kld / Math.log(2);
-
-
-    }
-     */
 }
