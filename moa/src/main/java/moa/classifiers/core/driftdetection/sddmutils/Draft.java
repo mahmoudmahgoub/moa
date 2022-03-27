@@ -1,11 +1,12 @@
 package moa.classifiers.core.driftdetection.sddmutils;
 
-import java.util.Objects;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import moa.classifiers.core.driftdetection.Employee;
+
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -69,5 +70,44 @@ public class Draft
                 .filter(i -> (i - 6) % 2 == 0)
                 .map(list::get)
                 .boxed()
-                .collect(Collectors.toList());*/
+                .collect(Collectors.toList());
+*/
+        // group by using 2 elements pair
+    // System.out.println(train.stream().collect(Collectors.groupingBy(instance -> new AbstractMap.SimpleEntry<>(instance.value(0),instance.value(1)))));
+    // grouping by examples:
+List<Employee> employees = Arrays.asList(
+        new Employee(1, 10, "Chandra"), new Employee(1, 20, "Rajesh"),
+        new Employee(1, 20, "Rahul"), new Employee(3, 20, "Rajesh"));
+
+    //Map < Integer, List< Employee >> byDept = employees.stream().collect(
+    //       Collectors.groupingBy(Employee::getDepartment));
+
+    //Map < Integer, List< String >> byDept = employees.stream().collect(
+    //        Collectors.groupingBy(Employee::getDepartment, Collectors.mapping(Employee::getName,Collectors.toList())));
+
+//        Map<Integer, Map<String, Long>> byDept = employees.stream().collect(
+    //              Collectors.groupingBy(Employee::getDepartment, Collectors.groupingBy(Employee::getName,Collectors.counting())));//Collectors.mapping(Employee::getName,Collectors.toList())));
+    //  Map<String, Map<Integer, List<Person>>> map = people
+    //        .collect(Collectors.groupingBy(Person::getName,
+    //          Collectors.groupingBy(Person::getAge));
+    //  List<String> fields = Arrays.asList(new String[]{"City", "Age"}); //This will be constructed as per user's wish
+/*
+    Map<Integer, Map<String, Long>> byDept = employees.stream().collect(
+            Collectors.groupingBy(Employee::getDepartment, Collectors.groupingBy(Employee::getName,Collectors.counting())));//Collectors.mapping(Employee::getName,Collectors.toList())));
+                (byDept).forEach((k, v) -> System.out.println("DeptId:" +k +"   " + v));
+ */
+/*
+    private static List<String> buildClassificationFunction(Map<String,String> map, List<String> fields) {
+        return fields.stream()
+                .map(map::get)
+                .collect(Collectors.toList());
+    }
+
+
+
+    Map<List<String>, List<Collection<String>>> city = aList.stream()
+            .collect(Collectors.groupingBy(map ->
+                            buildClassificationFunction(map, fields), //Call the function to build the list
+                    Collectors.mapping(Map::values, Collectors.toList())));
+*/
 }

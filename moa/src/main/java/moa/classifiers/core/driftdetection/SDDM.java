@@ -28,6 +28,7 @@ import moa.core.ObjectRepository;
 import moa.streams.ArffFileStream;
 import moa.tasks.TaskMonitor;
 
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,8 +39,9 @@ import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
 
 /**
- * Drift detection method based in EDDM method of Manuel Baena et al.
+ * Drift detection method based in SDDM method of <todo add name of author></todo>
  *
+ * //todo change this description
  * <p>Early Drift Detection Method. Manuel Baena-Garcia, Jose Del Campo-Avila,
  * Raúl Fidalgo, Albert Bifet, Ricard Gavalda, Rafael Morales-Bueno. In Fourth
  * International Workshop on Knowledge Discovery from Data Streams, 2006.</p>
@@ -240,35 +242,7 @@ public class SDDM extends AbstractChangeDetector {
         // TODO Auto-generated method stub
     }
 //**********************************Algorithm**************************************//
-    private void extractMetadata(ArrayList<Example<Instance>> data){
-       //data = self.__remove_ignore_columns(file_to_parse)
-       // data = data.select_dtypes(include=[np.number])
-        if(data.size()>0) {
-            double bin_fraction = 1.0 / bins;
-            DescriptiveStatistics stats = new DescriptiveStatistics();
-            IntStream.rangeClosed(1, 10).forEach(i->stats.addValue(i));//add 1,2,3,4,5,6,7,8,9,10 to stats
-        }
-        /*
-         type(self.train_data[0]):<class 'pandas.core.frame.DataFrame'>
-         type(self.train_data):<class 'list'>
-*/
-    }
-/*    def __extract_metadata(self, file_to_parse):
 
-
-
-            bin_vals = np.arange(0.0, 1 + bin_fraction, bin_fraction)
-    bin_vals = bin_vals[bin_vals <=1]
-    data = data.quantile(bin_vals, axis = 0)
-
-    self.meta_data = {}
-        for column in data.columns:
-            if column != self.target_column:
-    self.meta_data[column] = np.concatenate(([np.NINF], np.sort(data[column].unique()), [np.inf]))*/
-//----------------------
-
-
-//////////////////////
 
 
     static class result_row{
@@ -281,27 +255,6 @@ public class SDDM extends AbstractChangeDetector {
     }
 
 
-    static NavigableMap<Double, Double> intervals(List<Double> zzz)
-    {
-
-        NavigableMap<Double, Double> map = new TreeMap<Double, Double>();
-        double i = 0;
-        for (double s : zzz) {
-            map.put(s, i);
-            i++;
-        }
-        return map;
-
-    }
-
-    static List<BigDecimal> quantiles(BigDecimal start, BigDecimal end, int steps) {
-        BigDecimal step = end.subtract( start).divide(BigDecimal.valueOf(steps));
-        return IntStream
-                .rangeClosed(0, steps)
-                .boxed()
-                .map(i -> start.add(step.multiply(BigDecimal.valueOf(i))))
-                .collect(Collectors.toList());
-    }
     public static void main(String[] args) throws Exception {
 
         SDDMAlgo sddmObj = new SDDMAlgo(5, 0);
@@ -326,86 +279,16 @@ public class SDDM extends AbstractChangeDetector {
             List<Instance> test2 = file_data.subList(i, i + drift);
             return new result_row[5];
         }).collect(Collectors.toList());
-        for(int i:SDDMReader.npRange(time_step,file_data.size(),drift)){
+        for(int i:SDDMReader.npRange(time_step,file_data.size(),drift)){ // #time step is window size length drift window slide
             train = file_data.subList(i-time_step,i);
             test = file_data.subList(i,i+drift);
             sddmObj.binsIntervalsBuilder(train);
             System.out.println("test data:"+test);
             List<List<Double>> binnedTrain = sddmObj.binData(train);
             List<List<Double>> binnedTest = sddmObj.binData(test);
-            sddmObj.getJointShift(binnedTrain,binnedTest);
-
-            System.out.println(quantiles(BigDecimal.ZERO,BigDecimal.valueOf(1),20));
-          //   train.stream().collect(Collectors.groupingBy(instance -> new grouping_taa7(instance.toDoubleArray(),2)));
-            //train.stream().collect(Collectors.groupingBy(instance -> instance.value(0)+instance.value(1)));
-           // System.out.println(train.stream().collect(Collectors.groupingBy(instance -> new AbstractMap.SimpleEntry<>(instance.value(0),instance.value(1)))));
-
+            Set<Integer> columns = new HashSet<>(Arrays.asList(0,1));
+            sddmObj.getJointShift(binnedTrain,binnedTest,columns);
+            System.out.println("fd");
         }
-            //    train = data.iloc[i-time_step:i] #time step is window size lenght drift window slide
-            //    test = data.iloc[i:i+length_drift]
-
-        List < Employee > employees = Arrays.asList(
-                new Employee(1, 10, "Chandra"), new Employee(1, 20, "Rajesh"),
-                new Employee(1, 20, "Rahul"), new Employee(3, 20, "Rajesh"));
-
-        //Map < Integer, List< Employee >> byDept = employees.stream().collect(
-         //       Collectors.groupingBy(Employee::getDepartment));
-
-        //Map < Integer, List< String >> byDept = employees.stream().collect(
-        //        Collectors.groupingBy(Employee::getDepartment, Collectors.mapping(Employee::getName,Collectors.toList())));
-
-//        Map<Integer, Map<String, Long>> byDept = employees.stream().collect(
-  //              Collectors.groupingBy(Employee::getDepartment, Collectors.groupingBy(Employee::getName,Collectors.counting())));//Collectors.mapping(Employee::getName,Collectors.toList())));
-      //  Map<String, Map<Integer, List<Person>>> map = people
-        //        .collect(Collectors.groupingBy(Person::getName,
-              //          Collectors.groupingBy(Person::getAge));
-      //  List<String> fields = Arrays.asList(new String[]{"City", "Age"}); //This will be constructed as per user's wish
-
-        Map<Integer, Map<String, Long>> byDept = employees.stream().collect(
-                             Collectors.groupingBy(Employee::getDepartment, Collectors.groupingBy(Employee::getName,Collectors.counting())));//Collectors.mapping(Employee::getName,Collectors.toList())));
-                (byDept).forEach((k, v) -> System.out.println("DeptId:" +k +"   " +
-                 v));
-
-
-        //System.out.println(stats);
     }
-/*
-    private static List<String> buildClassificationFunction(Map<String,String> map, List<String> fields) {
-        return fields.stream()
-                .map(map::get)
-                .collect(Collectors.toList());
-    }
-
-
-
-    Map<List<String>, List<Collection<String>>> city = aList.stream()
-            .collect(Collectors.groupingBy(map ->
-                            buildClassificationFunction(map, fields), //Call the function to build the list
-                    Collectors.mapping(Map::values, Collectors.toList())));
-*/
-  /*  private getJointShift(){
-
-
-
-    }
-    def __get_joint_shift(train, test, cols):
-          #  if len(cols) == 1 and cols[0] == "":
-          #  return 0
-
-    train = tr[cols]
-    test = te[cols]
-
-    cols = [c for c in cols]
-
-    grouped = pd.merge(train.groupby(cols).size().reset_index(name = 'count_train'),
-                            test.groupby(cols).size().reset_index(name = 'count_test'),
-    on = cols, how="outer")
-    grouped = grouped[["count_train", "count_test"]]
-
-    grouped['count_train'] = grouped['count_train'].fillna(0)
-    grouped['count_test'] = grouped['count_test'].fillna(0)
-
-        return Helper.get_distance(grouped["count_train"], grouped["count_test"], normalization_coeff=self.normalization_coeff,
-    method=self.distance_measure)*/
-
 }
