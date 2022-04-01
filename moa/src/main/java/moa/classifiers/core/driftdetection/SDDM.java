@@ -271,7 +271,8 @@ public class SDDM extends AbstractChangeDetector {
         while (stream.hasMoreInstances() ) {
              file_data.add(stream.nextInstance().getData());
         }
-
+        sddmObj.setNumClassLabels(file_data.get(0).numClasses());
+        sddmObj.setTargetColumn(file_data.get(0).numAttributes()-1);
         int time_step =2,drift =1;
         Reader SDDMReader = new Reader();
         List<result_row[]> z = SDDMReader.npRangeStream(time_step, file_data.size(), drift).map(i -> {
@@ -288,6 +289,7 @@ public class SDDM extends AbstractChangeDetector {
             List<List<Double>> binnedTest = sddmObj.binData(test);
             Set<Integer> columns = new HashSet<>(Arrays.asList(0,1));
             sddmObj.getJointShift(binnedTrain,binnedTest,columns);
+            sddmObj.getConditionalCovariateDrift(binnedTrain,binnedTest,columns);
             System.out.println("fd");
         }
     }

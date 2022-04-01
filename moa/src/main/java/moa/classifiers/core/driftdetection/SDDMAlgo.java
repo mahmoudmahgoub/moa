@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class SDDMAlgo {
 
@@ -16,11 +17,15 @@ public class SDDMAlgo {
     private int numsBins;
     private double normalizationCoeff;
     private List <NavigableMap<Double, Double>> IntervalsMappers;
+    private int numClassLabels;
+    private int targetColumn;
 
     public SDDMAlgo(int numsBins, long normalizationCoeff) {
         this.numsBins = numsBins;
         this.normalizationCoeff = normalizationCoeff;
         IntervalsMappers =new ArrayList<>();
+        numClassLabels = 0;
+        targetColumn = 0;
     }
 
     List<BigDecimal> binsGenerator(int numBins) {
@@ -124,6 +129,14 @@ public class SDDMAlgo {
         return dataBinned;
 }
 
+    public void setNumClassLabels(int numClassLabels) {
+        this.numClassLabels = numClassLabels;
+    }
+
+    public void setTargetColumn(int targetColumn) {
+        this.targetColumn = targetColumn;
+    }
+
     static class InstancesGrouping {
         List<Double> arr;
         int noElems;
@@ -198,10 +211,12 @@ public class SDDMAlgo {
 
     }
 
-    void getJointShift(List<List<Double>> trainData,List<List<Double>>  testData,Set<Integer> cols){
+    double getJointShift(List<List<Double>> trainData,List<List<Double>>  testData,Set<Integer> cols){
         // if len(cols) == 1 and cols[0] == "":  return 0 //todo add this check which is found in python
-        List<List<Double>> modifiedTrainData = new ArrayList<>(trainData);
-        List<List<Double>>  modifiedTestData = new ArrayList<>(testData);
+        //todo check target_column
+        List<List<Double>> modifiedTrainData = new ArrayList<>(trainData.stream().map(x -> new ArrayList<>(x)).collect(Collectors.toList()));
+        List<List<Double>> modifiedTestData = new ArrayList<>(testData.stream().map(x -> new ArrayList<>(x)).collect(Collectors.toList()));
+
         for(List<Double> Instance:modifiedTrainData) {
             for (int i = 0; i < Instance.size(); i++) {
                 if (!cols.contains(i))
@@ -226,9 +241,28 @@ public class SDDMAlgo {
         }
         System.out.println( groupedTestTrain.values().toArray()); // returns an array of values
 
-        get_distance(groupedTestTrain);
+       return get_distance(groupedTestTrain);
     }
 
+    void getPosteriorDrift(List<List<Double>> trainData,List<List<Double>>  testData,Set<Integer> cols){
+        //if self.target_column == "": return 0 //todo
 
+
+    }
+
+  double getConditionalCovariateDrift(List<List<Double>> trainData,List<List<Double>>  testData,Set<Integer> covariateCols) {
+      //if self.target_column == "": return 0 todo
+      //todo targetclass need to be added
+
+      double ccd = 0;
+      for (int classLabel=0;classLabel< numClassLabels;classLabel++) {
+          int finalClassLabel = classLabel;
+          List<List<Double>> sliceTrain = trainData.stream().filter(x -> x.get(targetColumn) == finalClassLabel).collect(Collectors.toList());
+          List<List<Double>> sliceTest = trainData.stream().filter(x -> x.get(targetColumn) == finalClassLabel).collect(Collectors.toList());
+          double kld = getJointShift(sliceTrain, sliceTest, covariateCols);
+          ccd = ccd + kld * ((double)sliceTest.size() /testData.size() + (double)sliceTrain.size() / trainData.size()) / 2;
+      }
+      return ccd;
+  }
 }
 
