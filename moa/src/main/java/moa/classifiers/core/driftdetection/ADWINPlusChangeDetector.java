@@ -59,11 +59,21 @@ public class ADWINPlusChangeDetector extends AbstractChangeDetector {
             new String[]{"Serial: SequentialADWINImpl",
                     "HalfCut: HalfCutCheckThreadExecutorADWINImpl"},
             0);
+
+    public ADWINPlusChangeDetector() {
+        resetLearning();
+    }
     @Override
     public void input(double inputValue) {
-        if (this.adwin == null) {
+       /* if (this.isChangeDetected == true || this.isInitialized == false) {
+            //resetLearning();
+            this.isInitialized = true;
+        }*/
+        /*if (this.adwin == null) {
+            System.out.println("reset");
             resetLearning();
-        }
+        }*/
+        this.isChangeDetected = false;
         try {
             if(adwin.addElement(inputValue)){
                 this.isChangeDetected = true;
@@ -73,8 +83,8 @@ public class ADWINPlusChangeDetector extends AbstractChangeDetector {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if(countDrifts==273)
-            System.out.println(countDrifts);
+      //  if(countDrifts==273)
+        //    System.out.println("hola"+countDrifts);
         adwin.adaptiveDrop();
        /* double ErrEstim = this.adwin.getEstimation();
         if(adwin.setInput(inputValue)) {

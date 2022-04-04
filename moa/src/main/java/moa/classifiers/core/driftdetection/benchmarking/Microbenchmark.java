@@ -1,20 +1,13 @@
 package moa.classifiers.core.driftdetection.benchmarking;
-
-
-/*import de.tub.bdapro.adwin.ADWINInterface;
-import de.tub.bdapro.adwin.ADWINWrapper;
-import de.tub.bdapro.adwin.ADWINWrapperOriginal;
-import de.tub.bdapro.adwin.SnapshotThreadExecutorADWINWrapper;
-import de.tub.bdapro.adwin.core.HalfCutCheckThreadExecutorADWINImpl;
-import de.tub.bdapro.adwin.core.histogram.Histogram;*/
-
 import com.yahoo.labs.samoa.instances.Instance;
 import moa.classifiers.core.driftdetection.ADWINPlusInterface;
 import moa.classifiers.core.driftdetection.ADWINPlusPlusWrapper;
 import moa.classifiers.core.driftdetection.RDDM;
 import moa.classifiers.core.driftdetection.adwinplus.SequentialADWINImpl;
 import moa.learners.ChangeDetectorLearner;
+import org.openjdk.jmh.Main;
 import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
@@ -65,12 +58,7 @@ public class Microbenchmark {
 
     private boolean warmup;
 
-
-
-
-
-
-
+/*
     // Dummy parameter values, because JMH requires default parameter values.
     // The actual parameter values are set in the main method.
     @Param({"SNAPSHOT"})
@@ -112,10 +100,10 @@ public class Microbenchmark {
     @Param({"5"})
     public int omega;
 
-
-    @Setup( Level.Trial )
+*/
+    @Setup( Level.Trial)
     public void setupTrial() throws Exception {
-        data = new double[batchSize];
+        data = new double[1000];//batchSize];
         warmup = true;
         adwinCount = 0;
         numTotalInvocations = 0;
@@ -134,31 +122,113 @@ public class Microbenchmark {
         //adwin = new ADWINWrapper(1, Histogram.class, HalfCutCheckThreadExecutorADWINImpl.class,5, 15, 20, 10, 0); //halfcut
 
          //adwin = new SnapshotThreadExecutorADWINWrapper(1, Histogram.class, SequentialADWINImpl.class, 5, 20, 30, 10, 0); //snapshot (optimisitc adwin)
-        //replace ^(\d\.\d)$
-        //with $1,$1,$1
-        //C:\Users\MahmoudMahgoub\Desktop\thesis python\data\sine1\sine1_w_50_n_0.1_102.arff
-       // E:\offline Thesis work\originaladwin++\datasets\Gradual datasets\10_drifts_dataset.arff
-        File file =
-               // new File("E:\\offline Thesis work\\originaladwin++\\datasets\\Gradual datasets\\10_drifts_dataset.txt");
-        new File("E:\\offline Thesis work\\originaladwin++\\datasets\\Gradual datasets\\273_drifts_dataset.txt");
-        Scanner sc = new Scanner(file);
-
-        int i = 0;
-        data = new double[(int) file.length()];
-        while (sc.hasNextLine()) {
-            data[i] = Double.parseDouble(sc.nextLine());
-            //System.out.println(data[i]);
-            i++;
-        }
     }
 
-    @Benchmark()
-    public boolean benchmarkAdwin() throws Exception {
-        //setupIteration();
+    @Benchmark
+    @Fork(value = 1, warmups = 0)
+    @Warmup(iterations = 5)
+    @Measurement(iterations = 20)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public static void adwinMOABenchmarking(final ExecutionPlan.AdwinMOAExecutionPlan plan, Blackhole blackHole) throws Exception {
+        int drift = 0;
+        for(int i2 = 0; i2 < 2000000; i2++) { //data.length()
+            plan.classifier.input(plan.data[i2]);
+            if (plan.classifier.getChange()) {
+                drift += 1;
+            }
+        }
+        blackHole.consume(drift);
+        System.out.println("ADWIN MOA no of drifts: "+drift);
+    }
+
+    @Benchmark
+    @Fork(value = 1, warmups = 0)
+    @Warmup(iterations = 5)
+    @Measurement(iterations = 20)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public static void adwinPlusPlusBenchmarking1(final ExecutionPlan.AdwinPlusPlus1ExecutionPlan plan, Blackhole blackHole) throws Exception {
+        int drift = 0;
+        //for (int i2 = 0; i2 < plan.dataInstances.size(); i2++) { //data.length()
+        for(int i2 = 0; i2 < 2000000; i2++) { //data.length()
+
+            plan.classifier.input(plan.data[i2]);
+            //plan.classifier.input(plan.dataInstances.get(i2).classValue());
+            // boolean flag = mc.benchmarkAdwin(plan.dataInstances.get(i2).classValue());
+            //System.out.println(R.getChange());
+            if (plan.classifier.getChange()) {
+                drift += 1;
+            }
+        }
+        blackHole.consume(drift);
+        System.out.println("ADWIN MOA no of drifts: "+drift);
+    }
+
+    @Benchmark
+    @Fork(value = 1, warmups = 0)
+    @Warmup(iterations = 5)
+    @Measurement(iterations = 20)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public static void DDMBenchmarking(final ExecutionPlan.DDMExecutionPlan plan, Blackhole blackHole) throws Exception {
+        int drift = 0;
+        for(int i2 = 0; i2 < 2000000; i2++) { //plan.data.length
+            plan.classifier.input(plan.data[i2]);
+            if (plan.classifier.getChange()) {
+                drift += 1;
+            }
+        }
+        blackHole.consume(drift);
+        System.out.println("DDM No of drifts: "+drift);
+    }
+
+    @Benchmark
+    @Fork(value = 1, warmups = 0)
+    @Warmup(iterations = 5)
+    @Measurement(iterations = 20)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public static void EDDMBenchmarking(final ExecutionPlan.EDDMExecutionPlan plan, Blackhole blackHole) throws Exception {
+        int drift = 0;
+
+        for(int i2 = 0; i2 < 2000000; i2++) { //plan.data.length
+            plan.classifier.input(plan.data[i2]);
+            if (plan.classifier.getChange()) {
+                drift += 1;
+            }
+        }
+        blackHole.consume(drift);
+        System.out.println("EDDM No of drifts: "+drift);
+    }
+
+    @Benchmark
+    @Fork(value = 1, warmups = 0)
+    @Warmup(iterations = 5)
+    @Measurement(iterations = 20)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public static void RDDMBenchmarking(final ExecutionPlan.RDDMExecutionPlan plan, Blackhole blackHole) throws Exception {
+        int drift = 0;
+        for(int i2 = 0; i2 < 2000000; i2++) { //plan.data.length
+            plan.classifier.input(plan.data[i2]);
+            if (plan.classifier.getChange()) {
+                drift += 1;
+            }
+        }
+        blackHole.consume(drift);
+        System.out.println("RDDM No of drifts: "+drift);
+    }
+
+
+
+   // @Benchmark()
+    public boolean benchmarkAdwin(double elem) throws Exception {
+
        // System.out.println("Item number "+numInvocations);
         //System.out.println("Input data is "+data[numInvocations]); //todo uncomment
 
-        if (numInvocations % 100 ==0) {
+       // if (numInvocations % 100 ==0) {
            // System.out.println("Current window size is "+adwin.getSize());/todo uncomment
             /* /todo uncomment
             File file =new File("C:/Users/MahmoudMahgoub/Downloads/MOA/out.txt");
@@ -167,20 +237,20 @@ public class Microbenchmark {
             PrintWriter pw = new PrintWriter(bw);
             pw.println(adwin.getSize());
             pw.close();*/
-        }
+      //  }
 
-        return adwin.addElement(data[numInvocations++]);
+        return adwin.addElement(elem);//data[numInvocations++]);
     }
 
+//
+   // @Benchmark()
+   // public void adaptiveWindowDrop(){
+   //     adwin.adaptiveDrop();
+   // }
 
-    @Benchmark()
-    public void adaptiveWindowDrop(){
-        adwin.adaptiveDrop();
-    }
-
-    @TearDown( Level.Iteration )
+   // @TearDown( Level.Iteration )
     public void teardownIteration() {
-        System.out.print("<Number of Adwin cut checks performed: " + (adwin.getAdwinCount() - adwinCount) + "> ");
+     /*   System.out.print("<Number of Adwin cut checks performed: " + (adwin.getAdwinCount() - adwinCount) + "> ");
         adwinCount = adwin.getAdwinCount();
         numTotalInvocations += numInvocations;
         if (warmup && numTotalInvocations == warmupIterations * batchSize) {
@@ -190,7 +260,7 @@ public class Microbenchmark {
             numTotalInvocations = 0;
             adwin = null;
           //  dataGenerator = null;
-        }
+        }*/
     }
 
     @TearDown( Level.Trial )
@@ -206,16 +276,16 @@ public class Microbenchmark {
         //R = new RDDM();
         Instance trainInst;
 
-        Microbenchmark mc = new Microbenchmark();
+        Main.main(args);
+
+       // Microbenchmark mc = new Microbenchmark();
         File file =
                 new File("E:\\offline Thesis work\\originaladwin++\\datasets\\Gradual datasets\\273_drifts_dataset.txt");
-        Scanner sc = new Scanner(file);
-        Scanner sc2 = new Scanner(System.in);
-        double[] data;
 
-        int i3 = 0;
-         sc2.nextInt();
-        data = new double[(int) file.length()];
+       // double[] data;
+
+       // int i3 = 0;
+       // data = new double[(int) file.length()];
        /* while (sc.hasNextLine()) {
             data[i3] = Double.parseDouble(sc.nextLine());
             //System.out.println(data[i]);
@@ -225,23 +295,23 @@ public class Microbenchmark {
         int drift=0;
         long start = System.nanoTime();
        // mc.data=data;
-        mc.setupIteration();
-        for(int i2=0;i2<data.length;i2++){
+        //mc.setupIteration();
+       // for(int i2=0;i2<data.length;i2++){
 ;
            // method.accept(object);
            // R.input(data[i2]);
-            boolean flag = mc.benchmarkAdwin();
+         //   boolean flag = mc.benchmarkAdwin();
             //System.out.println(R.getChange());
            // if(R.getChange()){
-            if(flag) {
-                drift+=1;
-            }
-
-        }
+          //  if(flag) {
+            //    drift+=1;
+           // }
+//vm options: -Dcom.sun.management.jmxremote.port=6789 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false //todo
+            //
+      //  }
         long end = System.nanoTime();
         Logger.info("classification runtime: {} millis", (end - start) / 1_000_000.0);
         System.out.println("Number of drifts is: " + drift);
-        sc2.next();
        // return;
         /*
         /////////////////
@@ -300,6 +370,7 @@ public class Microbenchmark {
 
 
     private static void addWinRunner() throws RunnerException {
+        System.out.println("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
         String argAdwinType = "SERIAL";
         String argChangeType = "INCREMENTAL";
         String argBatchSize = "3";

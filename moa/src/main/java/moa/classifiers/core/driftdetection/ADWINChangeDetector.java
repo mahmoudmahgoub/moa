@@ -31,7 +31,7 @@ import moa.tasks.TaskMonitor;
  *
  *
  * @author Albert Bifet (abifet at cs dot waikato dot ac dot nz)
- * @version $Revision: 7 $
+ * @version $Revision: 7 $DDM
  */
 public class ADWINChangeDetector extends AbstractChangeDetector {
 
