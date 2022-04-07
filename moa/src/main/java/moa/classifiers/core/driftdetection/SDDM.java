@@ -290,6 +290,7 @@ public class SDDM extends AbstractChangeDetector {
             Set<Integer> columns = new HashSet<>(Arrays.asList(0,1));
             sddmObj.getJointShift(binnedTrain,binnedTest,columns);
             sddmObj.getConditionalCovariateDrift(binnedTrain,binnedTest,columns);
+            sddmObj.getPosteriorDrift(binnedTrain,binnedTest,columns);
             System.out.println("fd");
         }
     }

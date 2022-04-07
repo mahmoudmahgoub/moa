@@ -137,7 +137,7 @@ public class SDDMAlgo {
         this.targetColumn = targetColumn;
     }
 
-    static class InstancesGrouping {
+    public static class InstancesGrouping {
         List<Double> arr;
         int noElems;
 
@@ -160,13 +160,13 @@ public class SDDMAlgo {
         }
     }
 
-    private Map<InstancesGrouping, ArrayList<Double>> dataNormalize(Map<InstancesGrouping, ArrayList<Long>> data){
-        Map<InstancesGrouping, ArrayList<Double>> normalizedData = new HashMap<>();
+    private Map<InstancesGrouping, List<Double>> dataNormalize(Map<InstancesGrouping, List<Long>> data){
+        Map<InstancesGrouping, List<Double>> normalizedData = new HashMap<>();
         double [][] arrnormalizedData = new double[data.size()][2];
 
         for(int j = 0; j<2;j++) {
             double arr_sum = 0 ;
-            for (ArrayList<Long> value : data.values()) {
+            for (List<Long> value : data.values()) {
                 arr_sum +=value.get(j);
             }
             double sumFactor = arr_sum + normalizationCoeff * data.size();
@@ -192,14 +192,14 @@ public class SDDMAlgo {
 
 
 
-    double get_distance(Map<InstancesGrouping, ArrayList<Long>> data) //todo add method in params list: method = "kld"
+    double get_distance(Map<InstancesGrouping, List<Long>> data) //todo add method in params list: method = "kld"
     {
         return kullback_leibler_divergence(dataNormalize(data));
     }
-    private double kullback_leibler_divergence( Map<InstancesGrouping, ArrayList<Double>> vals) {
+    private double kullback_leibler_divergence( Map<InstancesGrouping, List<Double>> vals) {
 
         double kld = 0, kld1 = 0, kld2 = 0;
-        for( ArrayList<Double> value : vals.values())
+        for( List<Double> value : vals.values())
         {
             if (value.get(0) == 0 || value.get(1) == 0)
                 continue;
@@ -232,10 +232,10 @@ public class SDDMAlgo {
         int colsSize = cols.size();
         Map<InstancesGrouping, Long> groupedTrain = modifiedTrainData.stream().collect(Collectors.groupingBy(instance -> new InstancesGrouping(instance, colsSize), Collectors.counting()));
         Map<InstancesGrouping, Long> groupedTest = modifiedTestData.stream().collect(Collectors.groupingBy(instance -> new InstancesGrouping(instance, colsSize), Collectors.counting()));
-        Map<InstancesGrouping, ArrayList<Long>> groupedTestTrain = new HashMap<>();
+        Map<InstancesGrouping, List<Long>> groupedTestTrain = new HashMap<>();
         groupedTrain.forEach((key,value)->groupedTestTrain.computeIfAbsent(key,k -> new ArrayList<>()).add(value));
         groupedTest.forEach((key,value)->groupedTestTrain.computeIfAbsent(key,k -> new ArrayList<>(Arrays.asList(Long.valueOf(0)))).add(value)); //add 0 for missed train data to make pairs
-        for(ArrayList<Long> val: groupedTestTrain.values()) {
+        for(List<Long> val: groupedTestTrain.values()) {
             if (val.size() <2 )
                 val.add((long) 0); //add 0 for missed test data to make pairs
         }
@@ -244,10 +244,109 @@ public class SDDMAlgo {
        return get_distance(groupedTestTrain);
     }
 
-    void getPosteriorDrift(List<List<Double>> trainData,List<List<Double>>  testData,Set<Integer> cols){
+
+    private double[][] dataNormalize2(long[][] data){ //todo merge with dataNormalize
+        double [][] arrnormalizedData = new double[data.length][2];
+
+        for(int j = 0; j<2;j++) {
+            double arr_sum = 0 ;
+            for (long[] value : data) {
+                arr_sum +=value[j];
+            }
+            double sumFactor = arr_sum + normalizationCoeff * data.length;
+
+            for (int i = 0;i<data.length;i++) {
+                arrnormalizedData[i][j] = (data[i][j] + normalizationCoeff) / (sumFactor + 2);
+            }
+
+        }
+
+        return arrnormalizedData;
+    }
+
+
+
+    double get_distance2(long[][] data) //todo merge with get_distance
+    {
+        return kullback_leibler_divergence2(dataNormalize2(data));
+    }
+    private double kullback_leibler_divergence2( double[][] vals) { //todo merge with kullback_leibler_divergence
+
+        double kld = 0, kld1 = 0, kld2 = 0;
+        for( double[] value : vals)
+        {
+            if (value[0] == 0 || value[1] == 0)
+                continue;
+            kld1 += value[0] * Math.log(value[0]/ value[1]);
+            kld2 += value[1] * Math.log(value[1] / value[0]);
+        }
+        kld = (kld1 / Math.log(2) + kld2 / Math.log(2))/2;
+        return kld;
+
+    }
+
+    double getPosteriorDrift(List<List<Double>> trainData,List<List<Double>>  testData,Set<Integer> cols){
         //if self.target_column == "": return 0 //todo
+        List<List<Double>> modifiedTrainData = trainData.stream().map(ArrayList::new).collect(Collectors.toList());
+        List<List<Double>> modifiedTestData = testData.stream().map(ArrayList::new).collect(Collectors.toList());
 
+       /* for(List<Double> Instance:modifiedTrainData) {
+            for (int i = 0; i < Instance.size(); i++) {
+                if (!cols.contains(i))
+                    Instance.remove(i);
+            }
+        }
+        for(List<Double> Instance:modifiedTestData){
+            for(int i = 0; i<Instance.size();i++){
+                if (!cols.contains(i))
+                    Instance.remove(i);
+            }
+        }*/
+        int colsSize = cols.size();
+        Map<InstancesGrouping, Double> weightsGroupedTrain = modifiedTrainData.stream().collect(Collectors.groupingBy(
+                instance -> new InstancesGrouping(instance, colsSize), Collectors.collectingAndThen(Collectors.counting(),aLong -> 1.0*aLong /modifiedTrainData.size())));
+        Map<InstancesGrouping, Double> weightsGroupedTest = modifiedTrainData.stream().collect(Collectors.groupingBy(
+                instance -> new InstancesGrouping(instance, colsSize), Collectors.collectingAndThen(Collectors.counting(),aLong ->1.0*aLong/modifiedTrainData.size())));
 
+        Map<InstancesGrouping, Map<Double, Long>>  groupedTrain = modifiedTrainData.stream().collect(Collectors.groupingBy(
+                instance -> new InstancesGrouping(instance, colsSize),
+                Collectors.groupingBy(instance -> instance.get(targetColumn),Collectors.counting())
+        ));
+        Map<InstancesGrouping, Map<Double, Long>>  groupedTest = modifiedTestData.stream().collect(Collectors.groupingBy(
+                instance -> new InstancesGrouping(instance, colsSize),
+                Collectors.groupingBy(instance -> instance.get(targetColumn),Collectors.counting())
+        ));
+
+             //   Map<InstancesGrouping, ArrayList<Long>> groupedTestTrain = new HashMap<>();
+       // groupedTrain.forEach((key,value)->groupedTestTrain.computeIfAbsent(key,k -> new ArrayList<>()).add(value.));
+        Map<InstancesGrouping, long[][]> groupedclasses= new HashMap<>();
+
+        groupedTrain.forEach((iG,m)->{
+            long[][] longs = new long[2][2]; //todo make it generic numClassLabels instead of the second 2 Long[2][numClassLabels]
+               longs[0] = new long[]{m.getOrDefault(0.0,0L),0L};
+               longs[1] = new long[]{m.getOrDefault(1.0,0L),0L};
+            groupedclasses.put(iG,longs);
+
+        });
+
+        groupedTest.forEach((iG,m)->{
+            if(groupedclasses.containsKey(iG))
+            {
+                groupedclasses.get(iG)[0][1]= m.getOrDefault(0.0,0L);
+                groupedclasses.get(iG)[1][1]= m.getOrDefault(1.0,0L);
+
+            } else {
+                long[][] longs = new long[2][2]; //todo make it generic numClassLabels instead of the second 2 Long[2][numClassLabels]
+                longs[0] = new long[]{0L,m.getOrDefault(0.0,0L)};
+                longs[1] = new long[]{0L,m.getOrDefault(1.0,0L)};
+                groupedclasses.put(iG,longs);
+            }
+        });
+
+        double posterior_drift = groupedclasses.entrySet().stream().mapToDouble(e -> get_distance2(e.getValue()) *
+                (weightsGroupedTrain.getOrDefault(e.getKey(), 0.0) + weightsGroupedTest.getOrDefault(e.getKey(), 0.0)) / 2).sum();
+        System.out.println("hola"+groupedclasses);
+        return posterior_drift;
     }
 
   double getConditionalCovariateDrift(List<List<Double>> trainData,List<List<Double>>  testData,Set<Integer> covariateCols) {
@@ -258,7 +357,7 @@ public class SDDMAlgo {
       for (int classLabel=0;classLabel< numClassLabels;classLabel++) {
           int finalClassLabel = classLabel;
           List<List<Double>> sliceTrain = trainData.stream().filter(x -> x.get(targetColumn) == finalClassLabel).collect(Collectors.toList());
-          List<List<Double>> sliceTest = trainData.stream().filter(x -> x.get(targetColumn) == finalClassLabel).collect(Collectors.toList());
+          List<List<Double>> sliceTest = testData.stream().filter(x -> x.get(targetColumn) == finalClassLabel).collect(Collectors.toList());
           double kld = getJointShift(sliceTrain, sliceTest, covariateCols);
           ccd = ccd + kld * ((double)sliceTest.size() /testData.size() + (double)sliceTrain.size() / trainData.size()) / 2;
       }
