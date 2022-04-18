@@ -259,27 +259,26 @@ public class SDDM extends AbstractChangeDetector {
 
         SDDMAlgo sddmObj = new SDDMAlgo(5, 0);
 
+       // covariatecolumns = cols without target col
 
-        DescriptiveStatistics stats = new DescriptiveStatistics();
-        stats.setPercentileImpl( new Percentile().
-                withEstimationType( Percentile.EstimationType.R_7 ) );
         List < Instance > file_data = new ArrayList<>();
         List < Instance > train;
         List < Instance > test;
-        moa.streams.ArffFileStream stream = new ArffFileStream("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\sine1\\sine1_w_50_n_0.1_102.arff", -1);
+        //moa.streams.ArffFileStream stream = new ArffFileStream("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\sine1\\sine1_w_50_n_0.1_102.arff", -1);
+        moa.streams.ArffFileStream stream = new ArffFileStream("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\sine full\\sine1_w_50_n_0.1_101.arff", -1);
 
         while (stream.hasMoreInstances() ) {
              file_data.add(stream.nextInstance().getData());
         }
         sddmObj.setNumClassLabels(file_data.get(0).numClasses());
         sddmObj.setTargetColumn(file_data.get(0).numAttributes()-1);
-        int time_step =2,drift =1;
+        int time_step =500,drift =50;
         Reader SDDMReader = new Reader();
-        List<result_row[]> z = SDDMReader.npRangeStream(time_step, file_data.size(), drift).map(i -> {
+       /* List<result_row[]> z = SDDMReader.npRangeStream(time_step, file_data.size(), drift).map(i -> {
             List<Instance> train2 = file_data.subList(i - time_step, i);
             List<Instance> test2 = file_data.subList(i, i + drift);
             return new result_row[5];
-        }).collect(Collectors.toList());
+        }).collect(Collectors.toList());*/
         for(int i:SDDMReader.npRange(time_step,file_data.size(),drift)){ // #time step is window size length drift window slide
             train = file_data.subList(i-time_step,i);
             test = file_data.subList(i,i+drift);
@@ -287,10 +286,11 @@ public class SDDM extends AbstractChangeDetector {
             System.out.println("test data:"+test);
             List<List<Double>> binnedTrain = sddmObj.binData(train);
             List<List<Double>> binnedTest = sddmObj.binData(test);
-            Set<Integer> columns = new HashSet<>(Arrays.asList(0,1));
-            sddmObj.getJointShift(binnedTrain,binnedTest,columns);
-            sddmObj.getConditionalCovariateDrift(binnedTrain,binnedTest,columns);
-            sddmObj.getPosteriorDrift(binnedTrain,binnedTest,columns);
+            Set<Integer> covariateColumns = new HashSet<>(Arrays.asList(0,1));
+            sddmObj.getJointResults(binnedTrain,binnedTest,covariateColumns);
+            sddmObj.getJointShift(binnedTrain,binnedTest,covariateColumns);
+            sddmObj.getConditionalCovariateDrift(binnedTrain,binnedTest,covariateColumns);
+            sddmObj.getPosteriorDrift(binnedTrain,binnedTest,covariateColumns);
             System.out.println("fd");
         }
     }
