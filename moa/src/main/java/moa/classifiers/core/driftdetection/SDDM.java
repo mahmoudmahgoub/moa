@@ -279,19 +279,24 @@ public class SDDM extends AbstractChangeDetector {
             List<Instance> test2 = file_data.subList(i, i + drift);
             return new result_row[5];
         }).collect(Collectors.toList());*/
+        List<Map<String, Double>> results = new ArrayList<>();
         for(int i:SDDMReader.npRange(time_step,file_data.size(),drift)){ // #time step is window size length drift window slide
             train = file_data.subList(i-time_step,i);
-            test = file_data.subList(i,i+drift);
+            int EndOfArr = Math.min(file_data.size(), i+drift);  // for the final step to avoid out of index
+            test = file_data.subList(i,EndOfArr);
             sddmObj.binsIntervalsBuilder(train);
-            System.out.println("test data:"+test);
             List<List<Double>> binnedTrain = sddmObj.binData(train);
             List<List<Double>> binnedTest = sddmObj.binData(test);
             Set<Integer> covariateColumns = new HashSet<>(Arrays.asList(0,1));
-            sddmObj.getJointResults(binnedTrain,binnedTest,covariateColumns);
-            sddmObj.getJointShift(binnedTrain,binnedTest,covariateColumns);
-            sddmObj.getConditionalCovariateDrift(binnedTrain,binnedTest,covariateColumns);
-            sddmObj.getPosteriorDrift(binnedTrain,binnedTest,covariateColumns);
-            System.out.println("fd");
+            Map<String, Double> res = sddmObj.getJointResults(binnedTrain,binnedTest,covariateColumns);
+            if(res.get("conceptdrift")>.6) {
+                System.out.println("Drift" + i+ " "+results.size());
+            }
+            results.add(res);
+           // sddmObj.getJointShift(binnedTrain,binnedTest,covariateColumns);
+            //sddmObj.getConditionalCovariateDrift(binnedTrain,binnedTest,covariateColumns);
+            //sddmObj.getPosteriorDrift(binnedTrain,binnedTest,covariateColumns);
         }
+        System.out.println("fd");
     }
 }

@@ -125,8 +125,6 @@ public class SDDMAlgo {
             }
             dataBinned.add(temp);
         }
-        System.out.println(arrDataBinned);
-        System.out.println(dataBinned);
         return dataBinned;
 }
 
@@ -262,7 +260,6 @@ public class SDDMAlgo {
             if (val.size() <2 )
                 val.add((long) 0); //add 0 for missed test data to make pairs
         }
-        System.out.println( groupedTestTrain.values().toArray()); // returns an array of values
 
        return get_distance(groupedTestTrain);
     }
@@ -368,7 +365,6 @@ public class SDDMAlgo {
 
         double posterior_drift = groupedclasses.entrySet().stream().mapToDouble(e -> get_distance2(e.getValue()) *
                 (weightsGroupedTrain.getOrDefault(e.getKey(), 0.0) + weightsGroupedTest.getOrDefault(e.getKey(), 0.0)) / 2).sum();
-        System.out.println("hola"+groupedclasses);
         return posterior_drift;
     }
 
@@ -397,7 +393,6 @@ public class SDDMAlgo {
        results.put("conceptdrift",   (getJointShift(trainData, testData, testColumns) / normalize));
        results.put("posteriordrift", (getPosteriorDrift(trainData, testData, covariateColumns) / normalize));
        results.put("conditionalcovariatedistribution", (getConditionalCovariateDrift(trainData, testData, covariateColumns) / normalize));
-       System.out.println("TTTTTTTTTTTTTTTTTTTTTTTest");
        return results;
    }
 }
