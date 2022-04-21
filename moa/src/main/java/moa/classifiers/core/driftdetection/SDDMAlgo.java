@@ -328,8 +328,8 @@ public class SDDMAlgo {
         int colsSize = cols.size();
         Map<InstancesGrouping, Double> weightsGroupedTrain = modifiedTrainData.stream().collect(Collectors.groupingBy(
                 instance -> new InstancesGrouping(instance, colsSize), Collectors.collectingAndThen(Collectors.counting(),aLong -> 1.0*aLong /modifiedTrainData.size())));
-        Map<InstancesGrouping, Double> weightsGroupedTest = modifiedTrainData.stream().collect(Collectors.groupingBy(
-                instance -> new InstancesGrouping(instance, colsSize), Collectors.collectingAndThen(Collectors.counting(),aLong ->1.0*aLong/modifiedTrainData.size())));
+        Map<InstancesGrouping, Double> weightsGroupedTest = modifiedTestData.stream().collect(Collectors.groupingBy(
+                instance -> new InstancesGrouping(instance, colsSize), Collectors.collectingAndThen(Collectors.counting(),aLong ->1.0*aLong/modifiedTestData.size())));
 
         Map<InstancesGrouping, Map<Double, Long>>  groupedTrain = modifiedTrainData.stream().collect(Collectors.groupingBy(
                 instance -> new InstancesGrouping(instance, colsSize),
