@@ -105,6 +105,7 @@ public class ADWINPlusChangeDetector extends AbstractChangeDetector {
 
        try {
             adwin = new ADWINPlusPlusWrapper(1, SequentialADWINImpl.class,15, 51, 60, 70000, 40000); //serial
+          //  adwin =  new ADWINPaperOriginalWrapper(1); //old
         } catch (Exception e) {
             e.printStackTrace(); //todo
         }

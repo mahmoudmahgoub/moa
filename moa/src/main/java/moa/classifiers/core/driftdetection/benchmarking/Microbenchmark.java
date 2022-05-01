@@ -47,83 +47,28 @@ public class Microbenchmark {
     final private static int warmUpIterations = 0;
    final private  static int measurmentsIterations = 1;
 
-    private static ADWINPlusInterface adwin;
 
-    private int adwinCount;
-
-   // private DataGenerator dataGenerator;
-
-    private double[] data;
-
-    private int numInvocations;
-
-    private int numTotalInvocations;
-
-    private boolean warmup;
-
-/*
-    // Dummy parameter values, because JMH requires default parameter values.
-    // The actual parameter values are set in the main method.
-    @Param({"SNAPSHOT"})
-    public AdwinType adwinType;
-
-    @Param({"0.01"})
-    public double delta;
-
-   // @Param({"INCREMENTAL"})
-  //  public DataGenerator.Type changeType;
-
-    @Param({"1000"})
-    public int numConstant;
-
-    @Param({"200"})
-    public int numChange;
-
-    @Param({"20"})
-    public int warmupIterations;
-
-    @Param({"100"})
-    public int measurementIterations;
-
-    @Param({"100000"})
-    public int batchSize;
-
-    @Param({"10000"})
-    public int min_lim;
-
-    @Param({"10000"})
-    public int safe_lim;
-
-    @Param({"2000"})
-    public int max_lim;
-
-    @Param({"5"})
-    public int theta;
-
-    @Param({"5"})
-    public int omega;
-
-*/
-    @Setup( Level.Trial)
-    public void setupTrial() throws Exception {
-        data = new double[1000];//batchSize];
-        warmup = true;
-        adwinCount = 0;
-        numTotalInvocations = 0;
-    }
-
-    @Setup( Level.Iteration )
-    public void setupIteration() throws Exception {
-        numInvocations = 0;
-
-        //adwin =  new ADWINWrapperOriginal(1); //old
-
-        //adwin = new ADWINPlusPlusWrapper(); //serial
-        adwin = new ADWINPlusPlusWrapper(1, SequentialADWINImpl.class,15, 51, 60, 70000, 40000); //serial
-
-        //adwin = new ADWINWrapper(1, Histogram.class, HalfCutCheckThreadExecutorADWINImpl.class,5, 15, 20, 10, 0); //halfcut
-
-         //adwin = new SnapshotThreadExecutorADWINWrapper(1, Histogram.class, SequentialADWINImpl.class, 5, 20, 30, 10, 0); //snapshot (optimisitc adwin)
+                            /* NobaseLearner*/
+    @Benchmark
+    @Fork(value = 1, warmups = 0)
+    @Warmup(iterations = warmUpIterations)
+    @Measurement(iterations = measurmentsIterations)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public static void adwinMOABenchmarking(final ExecutionPlan.AdwinMOAExecutionPlan plan, Blackhole blackHole) throws Exception {
+        int drift = 0;
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\AdwinMOAdrifts"));
+        for(int i2 = 0; i2<plan.data.length; i2++) { //data.length() 2000000
+           // System.out.println(plan.data.length);
+            plan.classifier.input(plan.data[i2]);
+            boolean detected_drift = plan.classifier.getChange();
+            og.println(detected_drift);
+            if (detected_drift) {
+                drift += 1;
+            }
+        }
+        blackHole.consume(drift);
+        System.out.println("ADWIN MOA no of drifts: "+drift);
     }
 
     @Benchmark
@@ -132,68 +77,23 @@ public class Microbenchmark {
     @Measurement(iterations = measurmentsIterations)
     @BenchmarkMode(Mode.AverageTime)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public static void baselearnerBenchmarking(final ExecutionPlan.baselearnerExecutionPlan plan, Blackhole blackHole) throws Exception {
+    public static void adwinPlusPlus1Benchmarking(final ExecutionPlan.AdwinPlusPlus1ExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
-       // plan.baselearner.getVotesForInstance(testInst);
-        /*for(int i2 = 0; i2 < 2000000&& i2<plan.data.length; i2++) { //data.length()
-            plan.classifier.input(plan.data[i2]);
-            if (plan.classifier.getChange()) {
-                drift += 1;
-            }
-        }*/
-        for(int i2 = 0; i2 < plan.instancesList.size(); i2++) { //data.length()
-            plan.detectionClassifier.trainOnInstanceImpl(plan.instancesList.get(i2));
-            if (plan.detectionClassifier.isChangeDetected()) {
-                drift += 1;
-            }
-            //blackHole.consume(drift);
-        }
-        System.out.println("ADWIN MOA no of drifts: "+drift);
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\AdwinPlusPlusdrifts"));
+        for(int i2 = 0; i2 <plan.data.length; i2++) { //data.length()
 
-    }
-
-    //@Benchmark
-    @Fork(value = 1, warmups = 0)
-    @Warmup(iterations = warmUpIterations)
-    @Measurement(iterations = measurmentsIterations)
-    @BenchmarkMode(Mode.AverageTime)
-    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public static void adwinMOABenchmarking(final ExecutionPlan.AdwinMOAExecutionPlan plan, Blackhole blackHole) throws Exception {
-        int drift = 0;
-        for(int i2 = 0; i2 < 2000000; i2++) { //data.length()
             plan.classifier.input(plan.data[i2]);
-            if (plan.classifier.getChange()) {
+            boolean detected_drift = plan.classifier.getChange();
+            og.println(detected_drift);
+            if (detected_drift) {
                 drift += 1;
             }
         }
         blackHole.consume(drift);
-        System.out.println("ADWIN MOA no of drifts: "+drift);
+        System.out.println("ADWIN PlusPlus1 no of drifts: "+drift);
     }
 
-    //@Benchmark
-    @Fork(value = 1, warmups = 0)
-    @Warmup(iterations = warmUpIterations)
-    @Measurement(iterations = measurmentsIterations)
-    @BenchmarkMode(Mode.AverageTime)
-    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public static void adwinPlusPlusBenchmarking1(final ExecutionPlan.AdwinPlusPlus1ExecutionPlan plan, Blackhole blackHole) throws Exception {
-        int drift = 0;
-        //for (int i2 = 0; i2 < plan.dataInstances.size(); i2++) { //data.length()
-        for(int i2 = 0; i2 < 2000000&&i2<plan.data.length; i2++) { //data.length()
-
-            plan.classifier.input(plan.data[i2]);
-            //plan.classifier.input(plan.dataInstances.get(i2).classValue());
-            // boolean flag = mc.benchmarkAdwin(plan.dataInstances.get(i2).classValue());
-            //System.out.println(R.getChange());
-            if (plan.classifier.getChange()) {
-                drift += 1;
-            }
-        }
-        blackHole.consume(drift);
-        System.out.println("ADWIN Plus Plus no of drifts: "+drift);
-    }
-
-    //@Benchmark
+    @Benchmark
     @Fork(value = 1, warmups = 0)
     @Warmup(iterations = warmUpIterations)
     @Measurement(iterations = measurmentsIterations)
@@ -201,9 +101,13 @@ public class Microbenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public static void DDMBenchmarking(final ExecutionPlan.DDMExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
-        for(int i2 = 0; i2 < 2000000&&i2<plan.data.length; i2++) { //plan.data.length
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\DDMdrifts"));
+
+        for(int i2 = 0; i2<plan.data.length; i2++) { //plan.data.length
             plan.classifier.input(plan.data[i2]);
-            if (plan.classifier.getChange()) {
+            boolean detected_drift = plan.classifier.getChange();
+            og.println(detected_drift);
+            if (detected_drift) {
                 drift += 1;
             }
         }
@@ -211,7 +115,7 @@ public class Microbenchmark {
         System.out.println("DDM No of drifts: "+drift);
     }
 
-    //@Benchmark
+    @Benchmark
     @Fork(value = 1, warmups = 0)
     @Warmup(iterations = warmUpIterations)
     @Measurement(iterations = measurmentsIterations)
@@ -219,10 +123,12 @@ public class Microbenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public static void EDDMBenchmarking(final ExecutionPlan.EDDMExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
-
-        for(int i2 = 0; i2 < 2000000; i2++) { //plan.data.length
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\EDDMdrifts"));
+        for(int i2 = 0; i2 < plan.data.length; i2++) {
             plan.classifier.input(plan.data[i2]);
-            if (plan.classifier.getChange()) {
+            boolean detected_drift = plan.classifier.getChange();
+            og.println(detected_drift);
+            if (detected_drift) {
                 drift += 1;
             }
         }
@@ -230,7 +136,7 @@ public class Microbenchmark {
         System.out.println("EDDM No of drifts: "+drift);
     }
 
-   // @Benchmark
+    @Benchmark
     @Fork(value = 1, warmups = 0)
     @Warmup(iterations = warmUpIterations)
     @Measurement(iterations = measurmentsIterations)
@@ -238,9 +144,13 @@ public class Microbenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public static void RDDMBenchmarking(final ExecutionPlan.RDDMExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
-        for(int i2 = 0; i2 < 2000000; i2++) { //plan.data.length
+
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\RDDMdrifts"+ExecutionPlan.RDDMExecutionPlan.filename));
+        for(int i2 = 0; i2 < plan.data.length; i2++) { //plan.data.length
             plan.classifier.input(plan.data[i2]);
-            if (plan.classifier.getChange()) {
+            boolean detected_drift = plan.classifier.getChange();
+            og.println(detected_drift);
+            if (detected_drift) {
                 drift += 1;
             }
         }
@@ -249,7 +159,7 @@ public class Microbenchmark {
     }
 
 
-   // @Benchmark
+    @Benchmark
     @Fork(value = 1, warmups = 0)
     @Warmup(iterations = warmUpIterations)
     @Measurement(iterations = measurmentsIterations)
@@ -257,11 +167,12 @@ public class Microbenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public static void STEPDBenchmarking(final ExecutionPlan.STEPDExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
-        //for (int i2 = 0; i2 < plan.dataInstances.size(); i2++) { //data.length()
-        for(int i2 = 0; i2 < 2000000&&i2<plan.data.length; i2++) { //data.length()
-
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\STEPDdrifts"));
+        for(int i2 = 0; i2<plan.data.length; i2++) { //data.length()
             plan.classifier.input(plan.data[i2]);
-            if (plan.classifier.getChange()) {
+            boolean detected_drift = plan.classifier.getChange();
+            og.println(detected_drift);
+            if (detected_drift) {
                 drift += 1;
             }
         }
@@ -269,7 +180,7 @@ public class Microbenchmark {
         System.out.println("STEPD no of drifts: "+drift);
     }
 
-   // @Benchmark
+    @Benchmark
     @Fork(value = 1, warmups = 0)
     @Warmup(iterations = warmUpIterations)
     @Measurement(iterations = measurmentsIterations)
@@ -277,11 +188,13 @@ public class Microbenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public static void seedBenchmarking(final ExecutionPlan.SEEDExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
-        //for (int i2 = 0; i2 < plan.dataInstances.size(); i2++) { //data.length()
-        for(int i2 = 0; i2 < 2000000&&i2<plan.data.length; i2++) { //data.length()
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\seeddrifts"));
+        for(int i2 = 0; i2 <plan.data.length; i2++) { //data.length()
 
             plan.classifier.input(plan.data[i2]);
-            if (plan.classifier.getChange()) {
+            boolean detected_drift = plan.classifier.getChange();
+            og.println(detected_drift);
+            if (detected_drift) {
                 drift += 1;
             }
         }
@@ -289,7 +202,7 @@ public class Microbenchmark {
         System.out.println("SEED no of drifts: "+drift);
     }
 
-   // @Benchmark
+    @Benchmark
     @Fork(value = 1, warmups = 0)
     @Warmup(iterations = warmUpIterations)
     @Measurement(iterations = measurmentsIterations)
@@ -297,11 +210,14 @@ public class Microbenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public static void SeqDrift2Benchmarking(final ExecutionPlan.SeqDrift2ExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
-        //for (int i2 = 0; i2 < plan.dataInstances.size(); i2++) { //data.length()
-        for(int i2 = 0; i2 < 2000000&&i2<plan.data.length; i2++) { //data.length()
+
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\SeqDrift2drifts"));
+        for(int i2 = 0; i2 <plan.data.length; i2++) { //data.length()
 
             plan.classifier.input(plan.data[i2]);
-            if (plan.classifier.getChange()) {
+            boolean detected_drift = plan.classifier.getChange();
+            og.println(detected_drift);
+            if (detected_drift) {
                 drift += 1;
             }
         }
@@ -309,7 +225,172 @@ public class Microbenchmark {
         System.out.println("SeqDrift2 no of drifts: "+drift);
     }
 
-   // @Benchmark()
+
+    //@Benchmark
+    @Fork(value = 1, warmups = 0)
+    @Warmup(iterations = warmUpIterations)
+    @Measurement(iterations = measurmentsIterations)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public static void baselearnerAdwinMOABenchmarking(final ExecutionPlan.BL_AdwinMOAExecutionPlan plan, Blackhole blackHole) throws Exception {
+        int drift = 0;
+
+        for(int i2 = 0; i2 < plan.instancesList.size(); i2++) { //data.length()
+            plan.baseLearnerClassifier.trainOnInstanceImpl(plan.instancesList.get(i2));
+            if (plan.baseLearnerClassifier.isChangeDetected()) {
+                drift += 1;
+            }
+            //blackHole.consume(drift);
+        }
+        System.out.println("BL ADWIN MOA no of drifts: "+drift);
+    }
+
+    ////@benchmark
+    @Fork(value = 1, warmups = 0)
+    @Warmup(iterations = warmUpIterations)
+    @Measurement(iterations = measurmentsIterations)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public static void baselearnerAdwinPlusPlus1Benchmarking(final ExecutionPlan.BL_AdwinPlusPlus1ExecutionPlan plan, Blackhole blackHole) throws Exception {
+        int drift = 0;
+
+        for(int i2 = 0; i2 < plan.instancesList.size(); i2++) { //data.length()
+            plan.baseLearnerClassifier.trainOnInstanceImpl(plan.instancesList.get(i2));
+            if (plan.baseLearnerClassifier.isChangeDetected()) {
+                drift += 1;
+            }
+            blackHole.consume(drift);
+        }
+        System.out.println("BL ADWINPlusPlus no of drifts: "+drift);
+    }
+
+
+    //@benchmark
+    @Fork(value = 1, warmups = 0)
+    @Warmup(iterations = warmUpIterations)
+    @Measurement(iterations = measurmentsIterations)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public static void baselearnerDDMBenchmarking(final ExecutionPlan.BL_DDMExecutionPlan plan, Blackhole blackHole) throws Exception {
+        int drift = 0;
+
+        for(int i2 = 0; i2 < plan.instancesList.size(); i2++) { //data.length()
+            plan.baseLearnerClassifier.trainOnInstanceImpl(plan.instancesList.get(i2));
+            if (plan.baseLearnerClassifier.isChangeDetected()) {
+                drift += 1;
+            }
+            blackHole.consume(drift);
+        }
+        System.out.println("BL DDM no of drifts: "+drift);
+    }
+
+    //@benchmark
+    @Fork(value = 1, warmups = 0)
+    @Warmup(iterations = warmUpIterations)
+    @Measurement(iterations = measurmentsIterations)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public static void baselearnerEDDMBenchmarking(final ExecutionPlan.BL_EDDMExecutionPlan plan, Blackhole blackHole) throws Exception {
+        int drift = 0;
+
+        for(int i2 = 0; i2 < plan.instancesList.size(); i2++) { //data.length()
+            plan.baseLearnerClassifier.trainOnInstanceImpl(plan.instancesList.get(i2));
+            if (plan.baseLearnerClassifier.isChangeDetected()) {
+                drift += 1;
+            }
+            blackHole.consume(drift);
+        }
+        System.out.println("BL EDDM no of drifts: "+drift);
+    }
+
+    //@benchmark
+    @Fork(value = 1, warmups = 0)
+    @Warmup(iterations = warmUpIterations)
+    @Measurement(iterations = measurmentsIterations)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public static void baselearnerRDDMBenchmarking(final ExecutionPlan.BL_RDDMExecutionPlan plan, Blackhole blackHole) throws Exception {
+        int drift = 0;
+
+        for(int i2 = 0; i2 < plan.instancesList.size(); i2++) { //data.length()
+            plan.baseLearnerClassifier.trainOnInstanceImpl(plan.instancesList.get(i2));
+            if (plan.baseLearnerClassifier.isChangeDetected()) {
+                drift += 1;
+            }
+            blackHole.consume(drift);
+        }
+        System.out.println("BL RDDM no of drifts: "+drift);
+    }
+
+    //@benchmark
+    @Fork(value = 1, warmups = 0)
+    @Warmup(iterations = warmUpIterations)
+    @Measurement(iterations = measurmentsIterations)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public static void baselearnerSTEPDBenchmarking(final ExecutionPlan.BL_STEPDExecutionPlan plan, Blackhole blackHole) throws Exception {
+        int drift = 0;
+
+        for(int i2 = 0; i2 < plan.instancesList.size(); i2++) { //data.length()
+            plan.baseLearnerClassifier.trainOnInstanceImpl(plan.instancesList.get(i2));
+            if (plan.baseLearnerClassifier.isChangeDetected()) {
+                drift += 1;
+            }
+            blackHole.consume(drift);
+        }
+        System.out.println("BL STEPD no of drifts: "+drift);
+    }
+
+    //@benchmark
+    @Fork(value = 1, warmups = 0)
+    @Warmup(iterations = warmUpIterations)
+    @Measurement(iterations = measurmentsIterations)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public static void baselearnerSEEDBenchmarking(final ExecutionPlan.BL_SEEDExecutionPlan plan, Blackhole blackHole) throws Exception {
+        int drift = 0;
+
+        for(int i2 = 0; i2 < plan.instancesList.size(); i2++) { //data.length()
+            plan.baseLearnerClassifier.trainOnInstanceImpl(plan.instancesList.get(i2));
+            if (plan.baseLearnerClassifier.isChangeDetected()) {
+                drift += 1;
+            }
+            blackHole.consume(drift);
+        }
+        System.out.println("BL SEED no of drifts: "+drift);
+    }
+
+    ////@benchmark
+    @Fork(value = 1, warmups = 0)
+    @Warmup(iterations = warmUpIterations)
+    @Measurement(iterations = measurmentsIterations)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public static void baselearnerSeqDrift2Benchmarking(final ExecutionPlan.BL_SeqDrift2ExecutionPlan plan, Blackhole blackHole) throws Exception {
+        int drift = 0;
+
+        for(int i2 = 0; i2 < plan.instancesList.size(); i2++) { //data.length()
+            plan.baseLearnerClassifier.trainOnInstanceImpl(plan.instancesList.get(i2));
+            if (plan.baseLearnerClassifier.isChangeDetected()) {
+                drift += 1;
+            }
+            blackHole.consume(drift);
+        }
+        System.out.println("BL SeqDrift no of drifts : "+drift);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+   // //@benchmark()
     public boolean benchmarkAdwin(double elem) throws Exception {
 
        // System.out.println("Item number "+numInvocations);
@@ -326,11 +407,12 @@ public class Microbenchmark {
             pw.close();*/
       //  }
 
-        return adwin.addElement(elem);//data[numInvocations++]);
+        //return adwin.addElement(elem);//data[numInvocations++]);
+        return true;
     }
 
 //
-   // @Benchmark()
+   // //@benchmark()
    // public void adaptiveWindowDrop(){
    //     adwin.adaptiveDrop();
    // }
@@ -350,15 +432,15 @@ public class Microbenchmark {
         }*/
     }
 
-    @TearDown( Level.Trial )
-    public void teardownTrial() {
-        adwin.terminateAdwin();
-    }
+   //@TearDown( Level.Trial )
+   // public void teardownTrial() {
+      //  adwin.terminateAdwin();
+   // }
 
 
     public static void main(String[] args) throws Exception {
-
-        ChangeDetectorLearner learner = new ChangeDetectorLearner();
+        Main.main(args);
+     /*   ChangeDetectorLearner learner = new ChangeDetectorLearner();
         RDDM R;
         //R = new RDDM();
         Instance trainInst;
@@ -396,9 +478,11 @@ public class Microbenchmark {
 //vm options: -Dcom.sun.management.jmxremote.port=6789 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false //todo
             //
       //  }
+        /*
         long end = System.nanoTime();
         Logger.info("classification runtime: {} millis", (end - start) / 1_000_000.0);
         System.out.println("Number of drifts is: " + drift);
+        */
        // return;
         /*
         /////////////////
@@ -455,7 +539,7 @@ public class Microbenchmark {
     }
 */
 
-
+/*
     private static void addWinRunner() throws RunnerException {
         System.out.println("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
         String argAdwinType = "SERIAL";
@@ -491,7 +575,7 @@ public class Microbenchmark {
     }
 
 
-
+*/
 
 
   /*  private ADWINInterface newAdwin() throws Exception {
@@ -512,7 +596,81 @@ public class Microbenchmark {
     /*private DataGenerator newDatagenerator() {
         return new DataGenerator(numConstant, changeType, numChange, DataGenerator.VarianceType.NOVARIANCE);
     }*/
+    //private static ADWINPlusInterface adwin;
+   /* private int adwinCount;
 
 
-    public enum AdwinType { ORIGINAL, SERIAL, HALFCUT, SNAPSHOT }
+    // private DataGenerator dataGenerator;
+
+    private double[] data;
+
+    private int numInvocations;
+
+    private int numTotalInvocations;
+
+    private boolean warmup;
+*/
+    /*
+        // Dummy parameter values, because JMH requires default parameter values.
+        // The actual parameter values are set in the main method.
+        @Param({"SNAPSHOT"})
+        public AdwinType adwinType;
+        @Param({"0.01"})
+        public double delta;
+       // @Param({"INCREMENTAL"})
+      //  public DataGenerator.Type changeType;
+        @Param({"1000"})
+        public int numConstant;
+
+        @Param({"200"})
+        public int numChange;
+
+        @Param({"20"})
+        public int warmupIterations;
+
+        @Param({"100"})
+        public int measurementIterations;
+
+        @Param({"100000"})
+        public int batchSize;
+
+        @Param({"10000"})
+        public int min_lim;
+
+        @Param({"10000"})
+        public int safe_lim;
+
+        @Param({"2000"})
+        public int max_lim;
+
+        @Param({"5"})
+        public int theta;
+
+        @Param({"5"})
+        public int omega;
+
+    */
+  /*  @Setup( Level.Trial)
+    public void setupTrial() throws Exception {
+        data = new double[1000];//batchSize];
+        warmup = true;
+        adwinCount = 0;
+        numTotalInvocations = 0;
+    }
+
+    @Setup( Level.Iteration )
+    public void setupIteration() throws Exception {
+        numInvocations = 0;
+
+        //adwin =  new ADWINWrapperOriginal(1); //old
+
+        //adwin = new ADWINPlusPlusWrapper(); //serial
+        adwin = new ADWINPlusPlusWrapper(1, SequentialADWINImpl.class,15, 51, 60, 70000, 40000); //serial
+
+        //adwin = new ADWINWrapper(1, Histogram.class, HalfCutCheckThreadExecutorADWINImpl.class,5, 15, 20, 10, 0); //halfcut
+
+         //adwin = new SnapshotThreadExecutorADWINWrapper(1, Histogram.class, SequentialADWINImpl.class, 5, 20, 30, 10, 0); //snapshot (optimisitc adwin)
+    }
+*/
+   // public enum AdwinType { ORIGINAL, SERIAL, HALFCUT, SNAPSHOT }
 }

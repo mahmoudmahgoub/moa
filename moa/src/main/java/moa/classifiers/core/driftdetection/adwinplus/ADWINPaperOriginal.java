@@ -1,11 +1,11 @@
 /*
- *    ADWIN.java
+ *    Adwin.java
  *    Copyright (C) 2008 UPC-Barcelona Tech, Catalonia
- *    @author Albert Bifet (abifet at cs dot waikato dot ac dot nz)
+ *    @author Albert Bifet
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
- *    the Free Software Foundation; either version 3 of the License, or
+ *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
  *    This program is distributed in the hope that it will be useful,
@@ -14,33 +14,28 @@
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with this program. If not, see <http://www.gnu.org/licenses/>.
- *    
+ *    along with this program; if not, write to the Free Software
+ *    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-package moa.classifiers.core.driftdetection;
-
-import moa.AbstractMOAObject;
+package moa.classifiers.core.driftdetection.adwinplus;
 
 /**
- * ADaptive sliding WINdow method. This method is a change detector and estimator.
- * It keeps a variable-length window of recently seen
- * items, with the property that the window has the maximal length statistically
- * consistent with the hypothesis "there has been no change in the average value
- * inside the window".
- *
- *
- * @author Albert Bifet (abifet at cs dot waikato dot ac dot nz)
- * @version $Revision: 7 $
+ * Original implementation of ADWIN see https://github.com/abifet/adwin
  */
-public class ADWIN extends AbstractMOAObject {
+public class ADWINPaperOriginal {
+     //extends Estimator {
 
-    private class List extends AbstractMOAObject {
-
+    private class List {
         protected int count;
-
         protected ListItem head;
-
         protected ListItem tail;
+
+        /*
+        public int measureByteSize() {
+            int size = (int) SizeOf.sizeOf(this);
+            size += count * head.measureByteSize();
+            return size;
+        }*/
 
         public List() {
 //			post: initializes the list to be empty.
@@ -81,9 +76,8 @@ public class ADWIN extends AbstractMOAObject {
             //	 pre: anObject is non-null
             //	 post: the object is added to the beginning of the list
             this.head = new ListItem(this.head, null);
-            if (this.tail == null) {
+            if (this.tail == null)
                 this.tail = this.head;
-            }
             this.count++;
         }
 
@@ -93,11 +87,10 @@ public class ADWIN extends AbstractMOAObject {
 //			ListItem temp;
 //			temp = this.head;
             this.head = this.head.next();
-            if (this.head != null) {
+            if (this.head != null)
                 this.head.setPrevious(null);
-            } else {
+            else
                 this.tail = null;
-            }
             this.count--;
             //temp=null;
             return;
@@ -107,9 +100,8 @@ public class ADWIN extends AbstractMOAObject {
 //			pre: anObject is non-null
 //			post: the object is added at the end of the list
             this.tail = new ListItem(null, this.tail);
-            if (this.head == null) {
+            if (this.head == null)
                 this.head = this.tail;
-            }
             this.count++;
         }
 
@@ -119,35 +111,31 @@ public class ADWIN extends AbstractMOAObject {
 //			ListItem temp;
 //			temp = this.tail;
             this.tail = this.tail.previous();
-            if (this.tail == null) {
+            if (this.tail == null)
                 this.head = null;
-            } else {
+            else
                 this.tail.setNext(null);
-            }
             this.count--;
             //temp=null;
             return;
         }
 
-        @Override
-        public void getDescription(StringBuilder sb, int indent) {
-        }
     }
 
-    private class ListItem extends AbstractMOAObject {
-//		protected Object data;
-
+    private class ListItem {
+        //		protected Object data;
         protected ListItem next;
-
         protected ListItem previous;
-
         protected int bucketSizeRow = 0;
-
-        protected int MAXBUCKETS = ADWIN.MAXBUCKETS;
-
+        protected int MAXBUCKETS = ADWINPaperOriginal.MAXBUCKETS;
         protected double bucketTotal[] = new double[MAXBUCKETS + 1];
-
         protected double bucketVariance[] = new double[MAXBUCKETS + 1];
+
+        /*
+        public int measureByteSize() {
+            int size = (int) SizeOf.sizeOf(this);
+            return size;
+        }*/
 
         public ListItem() {
 //			post: initializes the node to be a tail node
@@ -157,9 +145,8 @@ public class ADWIN extends AbstractMOAObject {
 
         public void clear() {
             bucketSizeRow = 0;
-            for (int k = 0; k <= MAXBUCKETS; k++) {
+            for (int k = 0; k <= MAXBUCKETS; k++)
                 clearBucket(k);
-            }
         }
 
         private void clearBucket(int k) {
@@ -173,12 +160,10 @@ public class ADWIN extends AbstractMOAObject {
             //this.data = element;
             this.next = nextNode;
             this.previous = previousNode;
-            if (nextNode != null) {
+            if (nextNode != null)
                 nextNode.previous = this;
-            }
-            if (previousNode != null) {
+            if (previousNode != null)
                 previousNode.next = this;
-            }
             clear();
         }
 
@@ -192,7 +177,7 @@ public class ADWIN extends AbstractMOAObject {
         }
 
         public void RemoveBucket() {
-//			Removes the first Buvket
+//			Removes the first Bucket
             compressBucketsRow(1);
         }
 
@@ -202,9 +187,8 @@ public class ADWIN extends AbstractMOAObject {
                 bucketTotal[k - NumberItemsDeleted] = bucketTotal[k];
                 bucketVariance[k - NumberItemsDeleted] = bucketVariance[k];
             }
-            for (int k = 1; k <= NumberItemsDeleted; k++) {
+            for (int k = 1; k <= NumberItemsDeleted; k++)
                 clearBucket(MAXBUCKETS - k + 1);
-            }
             bucketSizeRow -= NumberItemsDeleted;
             //BucketNumber-=NumberItemsDeleted;
         }
@@ -252,73 +236,63 @@ public class ADWIN extends AbstractMOAObject {
         }
         /*
         public ListItem(Object element,
-        ListItem nextNode){
-        //		post: initializes the node to contain the given
-        //		 object and link to the given next node.
-        this.data = element;
-        this.next = nextNode;
-        }
-        public ListItem(Object element) {
-        //		post: initializes the node to be a tail node
-        //		 containing the given value.
-        this(element, null);
-        }
+		ListItem nextNode){
+//		post: initializes the node to contain the given
+//		 object and link to the given next node.
+		this.data = element;
+		this.next = nextNode;
+		}
+		public ListItem(Object element) {
+//		post: initializes the node to be a tail node
+//		 containing the given value.
+		this(element, null);
+		}
 
 
-        public Object value() {
-        //			 post: returns the element in this node
-        return this.data;
-        }
-        public void setValue(Object anObject) {
-        //			 post: sets the element in this node to the given
-        //			 object.
-        this.data = anObject;
-        }
-         */
-
-        @Override
-        public void getDescription(StringBuilder sb, int indent) {
-        }
+		public Object value() {
+//			 post: returns the element in this node
+			return this.data;
+			}
+		public void setValue(Object anObject) {
+//			 post: sets the element in this node to the given
+//			 object.
+			this.data = anObject;
+			}
+		 */
     }
 
-    public static final double DELTA = .002; //.1;
-
-    private static final int mintMinimLongitudWindow = 1; //10
-
+    public static final double DELTA = 1; //.1;
+    private static final int mintMinimLongitudWindow = 10; //10
     private double mdbldelta = .002; //.1;
-
     private int mintTime = 0;
-
-    private int mintClock = 1;
-
+    private int mintClock = 32;
     private double mdblWidth = 0; // Mean of Width = mdblWidth/Number of items
     //BUCKET
-
     public static final int MAXBUCKETS = 5;
-
+    // List Size - 1 = ListItem(i) = Buckets mit 2^i elemente
     private int lastBucketRow = 0;
-
     private double TOTAL = 0;
-
     private double VARIANCE = 0;
-
+    /**
+     * Anzahl an elementen in allen windows
+     */
     private int WIDTH = 0;
-
     private int BucketNumber = 0;
 
     private int Detect = 0;
-
     private int numberDetections = 0;
-
     private int DetectTwice = 0;
-
     private boolean blnBucketDeleted = false;
-
     private int BucketNumberMAX = 0;
-
-    private int mintMinWinLength = 5;
+    private static final int mintMinWinLength = 5;
 
     private List listRowBuckets;
+
+    public int min_lim;
+
+    public int theta;
+
+    public int omega;
 
     public boolean getChange() {
         return blnBucketDeleted;
@@ -334,10 +308,6 @@ public class ADWIN extends AbstractMOAObject {
 
     public int getWidth() {
         return WIDTH;
-    }
-
-    public void setClock(int intClock) {
-        mintClock = intClock;
     }
 
     public int getClock() {
@@ -372,6 +342,7 @@ public class ADWIN extends AbstractMOAObject {
         return mdblWidth;
     }
 
+
     private void initBuckets() {
         //Init buckets
         listRowBuckets = new List();
@@ -386,9 +357,8 @@ public class ADWIN extends AbstractMOAObject {
         WIDTH++;
         insertElementBucket(0, Value, listRowBuckets.head());
         double incVariance = 0;
-        if (WIDTH > 1) {
+        if (WIDTH > 1)
             incVariance = (WIDTH - 1) * (Value - TOTAL / (WIDTH - 1)) * (Value - TOTAL / (WIDTH - 1)) / WIDTH;
-        }
         VARIANCE += incVariance;
         TOTAL += Value;
         compressBuckets();
@@ -398,9 +368,8 @@ public class ADWIN extends AbstractMOAObject {
         //Insert new bucket
         Node.insertBucket(Value, Variance);
         BucketNumber++;
-        if (BucketNumber > BucketNumberMAX) {
+        if (BucketNumber > BucketNumberMAX)
             BucketNumberMAX = BucketNumber;
-        }
     }
 
     private int bucketSize(int Row) {
@@ -457,12 +426,9 @@ public class ADWIN extends AbstractMOAObject {
                 nextNode.insertBucket(cursor.Total(0) + cursor.Total(1), cursor.Variance(0) + cursor.Variance(1) + incVariance);
                 BucketNumber++;
                 cursor.compressBucketsRow(2);
-                if (nextNode.bucketSizeRow <= MAXBUCKETS) {
-                    break;
-                }
-            } else {
+                if (nextNode.bucketSizeRow <= MAXBUCKETS) break;
+            } else
                 break;
-            }
             cursor = cursor.next();
             i++;
         } while (cursor != null);
@@ -500,16 +466,15 @@ public class ADWIN extends AbstractMOAObject {
 
                 cursor = listRowBuckets.tail();
                 int i = lastBucketRow;
+                // Solange verschiebe buckets to w0 bis !blnExit && cursor != null
                 do {
                     for (int k = 0; k <= (cursor.bucketSizeRow - 1); k++) {
                         n2 = bucketSize(i);
                         u2 = cursor.Total(k);
-                        if (n0 > 0) {
+                        if (n0 > 0)
                             v0 += cursor.Variance(k) + (double) n0 * n2 * (u0 / n0 - u2 / n2) * (u0 / n0 - u2 / n2) / (n0 + n2);
-                        }
-                        if (n1 > 0) {
+                        if (n1 > 0)
                             v1 -= cursor.Variance(k) + (double) n1 * n2 * (u1 / n1 - u2 / n2) * (u1 / n1 - u2 / n2) / (n1 + n2);
-                        }
 
                         n0 += bucketSize(i);
                         n1 -= bucketSize(i);
@@ -521,7 +486,7 @@ public class ADWIN extends AbstractMOAObject {
                             break;
                         }
                         double absvalue = (double) (u0 / n0) - (u1 / n1);       //n1<WIDTH-mintMinWinLength-1
-                        if ((n1 > mintMinWinLength + 1 && n0 > mintMinWinLength + 1) && // Diference NEGATIVE
+                        if ((n1 > mintMinWinLength + 1 && n0 > mintMinWinLength + 1) &&  // Diference NEGATIVE
                                 //if(
                                 blnCutexpression(n0, n1, u0, u1, v0, v1, absvalue, delta)) {
                             blnBucketDeleted = true;
@@ -551,11 +516,25 @@ public class ADWIN extends AbstractMOAObject {
             }//End While // Diference
         }//End if
 
-        mdblWidth += getWidth();
-        if (blnChange) {
-            numberDetections++;
+
+        //////////////////////////////////////////////////////////////////////////////
+        /*
+        if (getWidth() > 10000) {
+            WIDTH -= deleteElement();
         }
+
+         */
+        ///////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+        mdblWidth += getWidth();
+        if (blnChange)
+            numberDetections++;
         return blnChange;
+
     }
 
     private boolean blnCutexpression(int n0, int n1, double u0, double u1, double v0, double v1, double absvalue, double delta) {
@@ -569,7 +548,8 @@ public class ADWIN extends AbstractMOAObject {
         return (Math.abs(absvalue) > epsilon);
     }
 
-    public ADWIN() {
+
+    public ADWINPaperOriginal() {
         mdbldelta = DELTA;
         initBuckets();
         Detect = 0;
@@ -578,7 +558,9 @@ public class ADWIN extends AbstractMOAObject {
 
     }
 
-    public ADWIN(double d) {
+
+
+    public ADWINPaperOriginal(double d) {
         mdbldelta = d;
         initBuckets();
         Detect = 0;
@@ -586,7 +568,7 @@ public class ADWIN extends AbstractMOAObject {
         DetectTwice = 0;
     }
 
-    public ADWIN(int cl) {
+    public ADWINPaperOriginal(int cl) {
         mdbldelta = DELTA;
         initBuckets();
         Detect = 0;
@@ -596,13 +578,9 @@ public class ADWIN extends AbstractMOAObject {
     }
 
     public String getEstimatorInfo() {
-        return "ADWIN;;";
+        return "ADWINOld;;";
     }
 
     public void setW(int W0) {
-    }
-
-    @Override
-    public void getDescription(StringBuilder sb, int indent) {
     }
 }
