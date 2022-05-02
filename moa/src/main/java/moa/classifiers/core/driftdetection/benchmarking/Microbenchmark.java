@@ -57,7 +57,7 @@ public class Microbenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public static void adwinMOABenchmarking(final ExecutionPlan.AdwinMOAExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
-        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\AdwinMOAdrifts"));
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\AdwinMOAdrifts"+plan.filename));
         for(int i2 = 0; i2<plan.data.length; i2++) { //data.length() 2000000
            // System.out.println(plan.data.length);
             plan.classifier.input(plan.data[i2]);
@@ -79,7 +79,7 @@ public class Microbenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public static void adwinPlusPlus1Benchmarking(final ExecutionPlan.AdwinPlusPlus1ExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
-        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\AdwinPlusPlusdrifts"));
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\AdwinPlusPlusdrifts"+plan.filename));
         for(int i2 = 0; i2 <plan.data.length; i2++) { //data.length()
 
             plan.classifier.input(plan.data[i2]);
@@ -101,7 +101,7 @@ public class Microbenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public static void DDMBenchmarking(final ExecutionPlan.DDMExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
-        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\DDMdrifts"));
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\DDMdrifts"+plan.filename));
 
         for(int i2 = 0; i2<plan.data.length; i2++) { //plan.data.length
             plan.classifier.input(plan.data[i2]);
@@ -115,7 +115,7 @@ public class Microbenchmark {
         System.out.println("DDM No of drifts: "+drift);
     }
 
-    @Benchmark
+   @Benchmark
     @Fork(value = 1, warmups = 0)
     @Warmup(iterations = warmUpIterations)
     @Measurement(iterations = measurmentsIterations)
@@ -123,7 +123,7 @@ public class Microbenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public static void EDDMBenchmarking(final ExecutionPlan.EDDMExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
-        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\EDDMdrifts"));
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\EDDMdrifts"+plan.filename));
         for(int i2 = 0; i2 < plan.data.length; i2++) {
             plan.classifier.input(plan.data[i2]);
             boolean detected_drift = plan.classifier.getChange();
@@ -145,7 +145,7 @@ public class Microbenchmark {
     public static void RDDMBenchmarking(final ExecutionPlan.RDDMExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
 
-        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\RDDMdrifts"+ExecutionPlan.RDDMExecutionPlan.filename));
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\RDDMdrifts"+plan.filename));
         for(int i2 = 0; i2 < plan.data.length; i2++) { //plan.data.length
             plan.classifier.input(plan.data[i2]);
             boolean detected_drift = plan.classifier.getChange();
@@ -167,7 +167,7 @@ public class Microbenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public static void STEPDBenchmarking(final ExecutionPlan.STEPDExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
-        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\STEPDdrifts"));
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\STEPDdrifts"+plan.filename));
         for(int i2 = 0; i2<plan.data.length; i2++) { //data.length()
             plan.classifier.input(plan.data[i2]);
             boolean detected_drift = plan.classifier.getChange();
@@ -188,7 +188,7 @@ public class Microbenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public static void seedBenchmarking(final ExecutionPlan.SEEDExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
-        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\seeddrifts"));
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\seeddrifts"+plan.filename));
         for(int i2 = 0; i2 <plan.data.length; i2++) { //data.length()
 
             plan.classifier.input(plan.data[i2]);
@@ -211,7 +211,7 @@ public class Microbenchmark {
     public static void SeqDrift2Benchmarking(final ExecutionPlan.SeqDrift2ExecutionPlan plan, Blackhole blackHole) throws Exception {
         int drift = 0;
 
-        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\SeqDrift2drifts"));
+        PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\SeqDrift2drifts"+plan.filename));
         for(int i2 = 0; i2 <plan.data.length; i2++) { //data.length()
 
             plan.classifier.input(plan.data[i2]);

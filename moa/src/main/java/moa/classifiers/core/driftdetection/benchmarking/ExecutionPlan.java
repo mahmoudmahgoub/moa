@@ -74,7 +74,7 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public AbstractChangeDetector classifier;
         public  double[] data;
        // @Param({"Inc1554", "Inc202","Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283" , "Ab162", "Ab9", "Steady"})
-        @Param({"Grad1738"})
+        @Param({"Inc1554","Grad1738","Ab1283"})
         String filename;
 
         //@Param({".0002","0.002","0.25",".99"})
@@ -98,7 +98,7 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public  double[] data;
         //@Param({"Inc1554", "Inc202","Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283" , "Ab162", "Ab9", "Steady"})
         //@Param({"Sine1"})
-        @Param({"Grad1738"})
+        @Param({"Inc1554","Grad1738","Ab1283"})
         String filename;
 
         @Setup(Level.Invocation)
@@ -119,7 +119,7 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public  double[] data;
         //@Param({"Inc1554", "Inc202","Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283" , "Ab162", "Ab9", "Steady"})
         //@Param({"Sine1"})
-        @Param({"Grad1738"})
+        @Param({"Inc1554","Grad1738","Ab1283"})
         String filename;
 
        /* @Param({"10","30","100"})
@@ -137,7 +137,7 @@ public  class ExecutionPlan implements CapabilitiesHandler {
             data = dataReader(filename);
           //  ((DDM) classifier).minNumInstancesOption.setValue(minInstances);
            // ((DDM) classifier).warningLevelOption.setValue(warningLevel);
-           // ((DDM) classifier).outcontrolLevelOption.setValue(outcontrolLevel);
+            ((DDM) classifier).outcontrolLevelOption.setValue(1.9);
         }
     }
 
@@ -147,7 +147,7 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public AbstractChangeDetector classifier;
         public  double[] data;
         //@Param({"Inc1554", "Inc202","Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283" , "Ab162", "Ab9", "Steady"})
-        @Param({"Grad1738"})
+        @Param({"Inc1554","Grad1738","Ab1283"})
         String filename;
         @Setup(Level.Invocation)
         public void setUp() throws Exception {
@@ -162,7 +162,7 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public AbstractChangeDetector classifier;
         public  double[] data;
         //@Param({"Inc1554", "Inc202","Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283" , "Ab162", "Ab9", "Steady"})
-        @Param({"Grad1738","Inc1554"})
+        @Param({"Inc1554","Grad1738","Ab1283"})
         public static String filename;
 
         //@Param({"1", "2.5", "5"})
@@ -184,7 +184,7 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public void setUp() throws Exception {
             classifier = new RDDM();
             data = dataReader(filename);
-         //   ((RDDM) classifier).driftLevelOption.setValue(driftlevel);
+            ((RDDM) classifier).driftLevelOption.setValue(1.82);
             //((RDDM) classifier).minNumInstancesOption.setValue(minInstances);
            // ((RDDM) classifier).warningLevelOption.setValue(warningLevel);
            //((RDDM) classifier).maxSizeConceptOption.setValue(maxSizeConcept);
@@ -199,13 +199,14 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public double[] data;
         //@Param({"Inc1554", "Inc202", "Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283", "Ab162", "Ab9", "Steady"})
 
-        @Param({"Grad1738"})
+        @Param({"Inc1554","Grad1738","Ab1283"})
         String filename;
 
         @Setup(Level.Invocation)
         public void setUp() throws Exception {
             classifier = new STEPD();
             data = dataReader(filename);
+            ((STEPD) classifier).alphaDriftOption.setValue(0.045);
         }
     }
 
@@ -214,13 +215,14 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public AbstractChangeDetector classifier;
         public double[] data;
         //@Param({"Inc1554", "Inc202", "Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283", "Ab162", "Ab9", "Steady"})
-        @Param({"Grad1738"})
+        @Param({"Inc1554","Grad1738","Ab1283"})
         String filename;
 
         @Setup(Level.Invocation)
         public void setUp() throws Exception {
             classifier = new SEEDChangeDetector();
             data = dataReader(filename);
+            ((SEEDChangeDetector) classifier).deltaSEEDOption.setValue(1);
         }
     }
 
@@ -230,13 +232,14 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public AbstractChangeDetector classifier;
         public double[] data;
         //@Param({"Inc1554", "Inc202", "Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283", "Ab162", "Ab9", "Steady"})
-        @Param({"Grad1738"})
+        @Param({"Inc1554","Grad1738","Ab1283"})
         String filename;
 
         @Setup(Level.Invocation)
         public void setUp() throws Exception {
             classifier = new SeqDrift2ChangeDetector();
             data = dataReader(filename);
+            ((SeqDrift2ChangeDetector) classifier).deltaSeqDrift2Option.setValue(1);
         }
     }
 
@@ -293,7 +296,7 @@ public  class ExecutionPlan implements CapabilitiesHandler {
             baseLearnerClassifier.baseLearnerOption.setValueViaCLIString("moa.classifiers.bayes.NaiveBayes");
             baseLearnerClassifier.prepareForUse();
             instancesList = arffDataReader(filename);
-
+           // RDDM -o 1.858
             //  "ADWINChangeDetector -a 1.0E-5");
 
             //  ((ADWINChangeDetector) classifier).deltaAdwinOption.setValue(deltaAdwin);
