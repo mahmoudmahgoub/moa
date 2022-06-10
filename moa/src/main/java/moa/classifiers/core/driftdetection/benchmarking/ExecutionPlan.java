@@ -31,7 +31,9 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         myMap.put("Ab9","E:\\offline Thesis work\\originaladwin++\\datasets\\Abrupt datasets\\9_drifts_dataset.txt");
         myMap.put("Steady","E:\\offline Thesis work\\originaladwin++\\datasets\\Steady dataset\\Steady dataset.txt");
         myMap.put("Sine1","E:\\offline Thesis work\\originaladwin++\\datasets\\sine1_w_50_n_0.1_101.arff");
-        myMap.put("elec","C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\usp-stream-data\\INSECTS-abrupt_balanced_norm.arff");
+        myMap.put("elec","C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\usp-stream-data\\elec.arff");//
+        myMap.put("airlines","C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\usp-stream-data\\airlines.arff");
+        myMap.put("insects","C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\usp-stream-data\\INSECTS-abrupt_balanced_norm.arff");
         //C:\Users\MahmoudMahgoub\Desktop\thesis python\data\sine1\sine1_w_50_n_0.1_102.arff
         // E:\offline Thesis work\originaladwin++\datasets\Gradual datasets\10_drifts_dataset.arff
         return myMap;
@@ -54,6 +56,26 @@ public  class ExecutionPlan implements CapabilitiesHandler {
 
         return data;
     }
+    static private double[] dataReaderArffdouble(String fileName) throws FileNotFoundException {
+
+        File file = new File(filenames.get(fileName));
+
+        moa.streams.ArffFileStream stream = new ArffFileStream(filenames.get(fileName), -1);
+        int i = 0;
+        double[] data =new double[2000000];// new double[(int) file.length()];
+        while (stream.hasMoreInstances() ) {
+            data[i] =stream.nextInstance().getData().classValue();
+           // System.out.println(data[i]);
+            i++;
+        }
+
+        //note: to convert 1 col data to 3 cols by duplicate use this regex in replace and find of notebad++
+        //find ^(\d\.\d)$
+        //and replace with: $1,$1,$1
+
+        return data;
+    }
+
 
    static private List<Instance> arffDataReader(String fileName){ //static private double[]
         List<Instance> dataInstances = new ArrayList<>();
@@ -74,18 +96,20 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public AbstractChangeDetector classifier;
         public  double[] data;
        // @Param({"Inc1554", "Inc202","Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283" , "Ab162", "Ab9", "Steady"})
-        @Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"elec","airlines","insects"})
+        @Param({"Inc1554"})
         String filename;
 
         //@Param({".0002","0.002","0.25",".99"})
-         @Param({"1"})
+        // @Param({"1"})
         double deltaAdwin;
         @Setup(Level.Invocation)
         public void setUp() throws Exception {
             classifier = new ADWINChangeDetector();
-            data = dataReader(filename);
-
-            ((ADWINChangeDetector) classifier).deltaAdwinOption.setValue(deltaAdwin);
+            //data = dataReader(filename);
+            data=dataReaderArffdouble(filename);
+            ((ADWINChangeDetector) classifier).deltaAdwinOption.setValue(1);
 
         }
     }
@@ -97,15 +121,17 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public AbstractChangeDetector classifier;
         public  double[] data;
         //@Param({"Inc1554", "Inc202","Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283" , "Ab162", "Ab9", "Steady"})
-        //@Param({"Sine1"})
-        @Param({"Inc1554","Grad1738","Ab1283"})
+       // @Param({"Sine1"})
+        //@Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"elec","airlines","insects"})
+        @Param({"Inc1554"})
         String filename;
 
         @Setup(Level.Invocation)
         public void setUp() throws Exception {
             classifier = new ADWINPlusChangeDetector();
             data = dataReader(filename);
-
+           // data=dataReaderArffdouble(filename);
             //classifier = new ADWINPlusPlusWrapper(1, SequentialADWINImpl.class,15, 51, 60, 70000, 40000); ///serial
 
         }
@@ -119,7 +145,9 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public  double[] data;
         //@Param({"Inc1554", "Inc202","Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283" , "Ab162", "Ab9", "Steady"})
         //@Param({"Sine1"})
-        @Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"elec","airlines","insects"})
+        @Param({"Inc1554"})
         String filename;
 
        /* @Param({"10","30","100"})
@@ -134,7 +162,8 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         @Setup(Level.Invocation)
         public void setUp() throws Exception {
             classifier = new DDM();
-            data = dataReader(filename);
+           // data = dataReader(filename);
+            data=dataReaderArffdouble(filename);
           //  ((DDM) classifier).minNumInstancesOption.setValue(minInstances);
            // ((DDM) classifier).warningLevelOption.setValue(warningLevel);
             ((DDM) classifier).outcontrolLevelOption.setValue(1.9);
@@ -147,12 +176,15 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public AbstractChangeDetector classifier;
         public  double[] data;
         //@Param({"Inc1554", "Inc202","Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283" , "Ab162", "Ab9", "Steady"})
-        @Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"elec","airlines","insects"})
+        @Param({"Inc1554"})
         String filename;
         @Setup(Level.Invocation)
         public void setUp() throws Exception {
             classifier = new EDDM();
-            data = dataReader(filename);
+            //data = dataReader(filename);
+            data=dataReaderArffdouble(filename);
 
         }
     }
@@ -162,7 +194,9 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public AbstractChangeDetector classifier;
         public  double[] data;
         //@Param({"Inc1554", "Inc202","Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283" , "Ab162", "Ab9", "Steady"})
-        @Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"Inc1554","Grad1738","Ab1283"})
+       // @Param({"elec","airlines","insects"})
+        @Param({"Inc1554"})
         public static String filename;
 
         //@Param({"1", "2.5", "5"})
@@ -183,7 +217,8 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         @Setup(Level.Invocation)
         public void setUp() throws Exception {
             classifier = new RDDM();
-            data = dataReader(filename);
+            //data = dataReader(filename);
+            data=dataReaderArffdouble(filename);
             ((RDDM) classifier).driftLevelOption.setValue(1.82);
             //((RDDM) classifier).minNumInstancesOption.setValue(minInstances);
            // ((RDDM) classifier).warningLevelOption.setValue(warningLevel);
@@ -199,23 +234,27 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         public double[] data;
         //@Param({"Inc1554", "Inc202", "Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283", "Ab162", "Ab9", "Steady"})
 
-        @Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"elec","airlines","insects"})
+        @Param({"Inc1554"})
         String filename;
 
         @Setup(Level.Invocation)
         public void setUp() throws Exception {
             classifier = new STEPD();
-            data = dataReader(filename);
+            //data = dataReader(filename);
+            data=dataReaderArffdouble(filename);
             ((STEPD) classifier).alphaDriftOption.setValue(0.045);
         }
     }
 
-    @State(Scope.Benchmark)
+    /*@State(Scope.Benchmark)
     public static class SEEDExecutionPlan {
         public AbstractChangeDetector classifier;
         public double[] data;
         //@Param({"Inc1554", "Inc202", "Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283", "Ab162", "Ab9", "Steady"})
-        @Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"Inc1554","Grad1738","Ab1283"})
+        @Param({"Inc1554"})
         String filename;
 
         @Setup(Level.Invocation)
@@ -225,27 +264,203 @@ public  class ExecutionPlan implements CapabilitiesHandler {
             ((SEEDChangeDetector) classifier).deltaSEEDOption.setValue(1);
         }
     }
-
+*/
 
     @State(Scope.Benchmark)
     public static class SeqDrift2ExecutionPlan {
         public AbstractChangeDetector classifier;
         public double[] data;
         //@Param({"Inc1554", "Inc202", "Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283", "Ab162", "Ab9", "Steady"})
-        @Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"elec","airlines","insects"})
+        @Param({"insects"})
+        //@Param({"Inc1554"})
         String filename;
 
         @Setup(Level.Invocation)
         public void setUp() throws Exception {
             classifier = new SeqDrift2ChangeDetector();
-            data = dataReader(filename);
+            //data = dataReader(filename);
+            data=dataReaderArffdouble(filename);
             ((SeqDrift2ChangeDetector) classifier).deltaSeqDrift2Option.setValue(1);
         }
     }
 
+    @State(Scope.Benchmark)
+    public static class SeqDrift1ExecutionPlan {
+        public AbstractChangeDetector classifier;
+        public double[] data;
+        //@Param({"Inc1554", "Inc202", "Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283", "Ab162", "Ab9", "Steady"})
+        //@Param({"Inc1554","Grad1738","Ab1283"})
+       // @Param({"elec","airlines","insects"})
+        @Param({"Inc1554"})
+                String filename;
+
+        @Setup(Level.Invocation)
+        public void setUp() throws Exception {
+            classifier = new SeqDrift1ChangeDetector();
+            data = dataReader(filename);
+            //data=dataReaderArffdouble(filename);
+            ((SeqDrift1ChangeDetector) classifier).deltaOption.setValue(1);
+            ((SeqDrift1ChangeDetector) classifier).deltaWarningOption.setValue(1);
+            //((SeqDrift1ChangeDetector) classifier).blockSeqDriftOption.setValue(100);
+        }
+    }
+
+      @State(Scope.Benchmark)
+    public static class SEEDExecutionPlan {
+        public AbstractChangeDetector classifier;
+        public double[] data;
+        //@Param({"Inc1554", "Inc202", "Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283", "Ab162", "Ab9", "Steady"})
+        //@Param({"Inc1554","Grad1738","Ab1283"})
+       // @Param({"elec","airlines","insects"})
+                @Param({"Inc1554"})
+                String filename;
+
+        @Setup(Level.Invocation)
+        public void setUp() throws Exception {
+            classifier = new SEEDChangeDetector();
+            data = dataReader(filename);
+            //data=dataReaderArffdouble(filename);
+            ((SEEDChangeDetector) classifier).deltaSEEDOption.setValue(1);
+            // ((SeqDrift1ChangeDetector) classifier).deltaWarningOption.setValue(1);
+            //((SeqDrift1ChangeDetector) classifier).blockSeqDriftOption.setValue(100);
+        }
+    }
+
+    @State(Scope.Benchmark)
+    public static class PageHinkleyDMExecutionPlan {
+        public AbstractChangeDetector classifier;
+        public double[] data;
+        //@Param({"Inc1554", "Inc202", "Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283", "Ab162", "Ab9", "Steady"})
+       // @Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"elec","airlines","insects"})
+                @Param({"Inc1554"})
+                String filename;
+
+        @Setup(Level.Invocation)
+        public void setUp() throws Exception {
+            classifier = new PageHinkleyDM();
+            data = dataReader(filename);
+           // data=dataReaderArffdouble(filename);
+            ((PageHinkleyDM) classifier).deltaOption.setValue(1);
+            ((PageHinkleyDM) classifier).minNumInstancesOption.setValue(10);
+            // ((SeqDrift1ChangeDetector) classifier).deltaWarningOption.setValue(1);
+            //((SeqDrift1ChangeDetector) classifier).blockSeqDriftOption.setValue(100);
+        }
+    }
 
 
+    @State(Scope.Benchmark)
+    public static class HDDMAExecutionPlan {
+        public AbstractChangeDetector classifier;
+        public double[] data;
+        //@Param({"Inc1554", "Inc202", "Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283", "Ab162", "Ab9", "Steady"})
+        //@Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"elec","airlines","insects"})
+                @Param({"Inc1554"})
+                String filename;
 
+        @Setup(Level.Invocation)
+        public void setUp() throws Exception {
+            classifier = new HDDM_A_Test();
+            data = dataReader(filename);
+           // data=dataReaderArffdouble(filename);
+            ((HDDM_A_Test) classifier).driftConfidenceOption.setValue(.0015);
+            //((PageHinkleyDM) classifier).deltaOption.setValue(1);
+            //((PageHinkleyDM) classifier).minNumInstancesOption.setValue(10);
+            // ((SeqDrift1ChangeDetector) classifier).deltaWarningOption.setValue(1);
+            //((SeqDrift1ChangeDetector) classifier).blockSeqDriftOption.setValue(100);
+        }
+    }
+
+    @State(Scope.Benchmark)
+    public static class HDDMWExecutionPlan {
+        public AbstractChangeDetector classifier;
+        public double[] data;
+        //@Param({"Inc1554", "Inc202", "Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283", "Ab162", "Ab9", "Steady"})
+        //@Param({"Inc1554","Grad1738","Ab1283"})
+       // @Param({"elec","airlines","insects"})
+                @Param({"Inc1554"})
+                String filename;
+
+        @Setup(Level.Invocation)
+        public void setUp() throws Exception {
+            classifier = new HDDM_W_Test();
+            data = dataReader(filename);
+            //data=dataReaderArffdouble(filename);
+            ((HDDM_W_Test) classifier).driftConfidenceOption.setValue(0.0006);
+            //((PageHinkleyDM) classifier).minNumInstancesOption.setValue(10);
+            // ((SeqDrift1ChangeDetector) classifier).deltaWarningOption.setValue(1);
+            //((SeqDrift1ChangeDetector) classifier).blockSeqDriftOption.setValue(100);
+        }
+    }
+
+    @State(Scope.Benchmark)
+    public static class GeometricMovingAverageDMExecutionPlan {
+        public AbstractChangeDetector classifier;
+        public double[] data;
+        //@Param({"Inc1554", "Inc202", "Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283", "Ab162", "Ab9", "Steady"})
+        //@Param({"Inc1554","Grad1738","Ab1283"})
+       // @Param({"elec","airlines","insects"})
+                @Param({"Inc1554"})
+                String filename;
+
+        @Setup(Level.Invocation)
+        public void setUp() throws Exception {
+            classifier = new GeometricMovingAverageDM();
+            data = dataReader(filename);
+            //data=dataReaderArffdouble(filename);
+            ((GeometricMovingAverageDM) classifier).lambdaOption.setValue(100);
+            //((PageHinkleyDM) classifier).minNumInstancesOption.setValue(10);
+            // ((SeqDrift1ChangeDetector) classifier).deltaWarningOption.setValue(1);
+            //((SeqDrift1ChangeDetector) classifier).blockSeqDriftOption.setValue(100);
+        }
+    }
+
+    @State(Scope.Benchmark)
+    public static class EWMAChartDMExecutionPlan {
+        public AbstractChangeDetector classifier;
+        public double[] data;
+        //@Param({"Inc1554", "Inc202", "Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283", "Ab162", "Ab9", "Steady"})
+       // @Param({"Inc1554","Grad1738","Ab1283"})
+       // @Param({"elec","airlines","insects"})
+                @Param({"Inc1554"})
+                String filename;
+
+        @Setup(Level.Invocation)
+        public void setUp() throws Exception {
+            classifier = new EWMAChartDM();
+            data = dataReader(filename);
+          //  data=dataReaderArffdouble(filename);
+          //  ((EWMAChartDM) classifier).lambdaOption.setValue(.01);
+            //((PageHinkleyDM) classifier).minNumInstancesOption.setValue(10);
+            // ((SeqDrift1ChangeDetector) classifier).deltaWarningOption.setValue(1);
+            //((SeqDrift1ChangeDetector) classifier).blockSeqDriftOption.setValue(100);
+        }
+    }
+
+    @State(Scope.Benchmark)
+    public static class CusumDMExecutionPlan {
+        public AbstractChangeDetector classifier;
+        public double[] data;
+        //@Param({"Inc1554", "Inc202", "Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283", "Ab162", "Ab9", "Steady"})
+        //@Param({"Inc1554","Grad1738","Ab1283"})
+        //@Param({"elec","airlines","insects"})
+                @Param({"Inc1554"})
+                String filename;
+
+        @Setup(Level.Invocation)
+        public void setUp() throws Exception {
+            classifier = new CusumDM();
+            data = dataReader(filename);
+           // data=dataReaderArffdouble(filename);
+             // ((CusumDM) classifier).deltaOption.setValue(.3);
+            //((PageHinkleyDM) classifier).minNumInstancesOption.setValue(10);
+            // ((SeqDrift1ChangeDetector) classifier).deltaWarningOption.setValue(1);
+            //((SeqDrift1ChangeDetector) classifier).blockSeqDriftOption.setValue(100);
+        }
+    }
 /*
     @State(Scope.Benchmark)
     public static class SDDMExecutionPlan{
@@ -368,7 +583,7 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         List<Instance> instancesList;
 
         //@Param({"Inc1554", "Inc202","Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283" , "Ab162", "Ab9", "Steady"})
-        @Param({"Sine1"})
+        @Param({"airlines"})
         String filename;
 
         /* @Param({"10","30","100"})
@@ -383,7 +598,7 @@ public  class ExecutionPlan implements CapabilitiesHandler {
 
         @Setup(Level.Invocation)
         public void setUp() throws Exception {
-            baseLearnerClassifier.driftDetectionMethodOption.setValueViaCLIString("DDM");
+            baseLearnerClassifier.driftDetectionMethodOption.setValueViaCLIString("DDM -o 1.9");
             baseLearnerClassifier.baseLearnerOption.setValueViaCLIString("moa.classifiers.bayes.NaiveBayes");
             baseLearnerClassifier.prepareForUse();
             instancesList = arffDataReader(filename);
@@ -421,10 +636,10 @@ public  class ExecutionPlan implements CapabilitiesHandler {
         List<Instance> instancesList;
 
         //@Param({"Inc1554", "Inc202","Inc3", "Grad1738", "Grad273", "Grad10", "Ab1283" , "Ab162", "Ab9", "Steady"})
-        @Param({"Sine1"})
+        @Param({"airlines","elec"})
         String filename;
 
-        @Param({"1", "2.5", "5"})
+        //@Param({"1", "2.5", "5"})
         double driftlevel;
 
       /*  @Param({"10","129","300"})

@@ -93,7 +93,8 @@ public class WindowClassificationPerformanceEvaluator extends BasicClassificatio
             }
         }
 
-        public double estimation(){
+        public double estimation()
+        {
             return sum / (lenWindow - qtyNaNs);
         }
 
