@@ -20,6 +20,7 @@ package moa.classifiers.core.driftdetection;
 
 import com.github.javacliparser.IntOption;
 import com.github.javacliparser.FloatOption;
+import com.yahoo.labs.samoa.instances.Instance;
 import moa.core.ObjectRepository;
 import moa.tasks.TaskMonitor;
 
@@ -85,6 +86,7 @@ public class DDM extends AbstractChangeDetector {
         warningLevel = this.warningLevelOption.getValue();
         outcontrolLevel = this.outcontrolLevelOption.getValue();
     }
+
 
     @Override
     public void input(double prediction) {

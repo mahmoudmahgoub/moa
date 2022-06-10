@@ -18,6 +18,7 @@
  */
 package moa.classifiers.core.driftdetection;
 
+import com.yahoo.labs.samoa.instances.Instance;
 import moa.options.AbstractOptionHandler;
 
 /**
@@ -78,6 +79,11 @@ public abstract class AbstractChangeDetector extends AbstractOptionHandler
      * @param inputValue the number to insert into the change detector
      */
     public abstract void input(double inputValue);
+
+    public void input(Instance inputValue) {
+            System.out.println("HIIIIIIIIIIIIIIIIIIIII");  //todo make the default operation to call input(double)
+        throw new UnsupportedOperationException("this is for SDDM only");
+}
 
     /**
      * Gets whether there is change detected.

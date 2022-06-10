@@ -18,6 +18,7 @@
  */
 package moa.classifiers.core.driftdetection;
 
+import com.yahoo.labs.samoa.instances.Instance;
 import moa.options.OptionHandler;
 
 /**
@@ -44,6 +45,9 @@ public interface ChangeDetector extends OptionHandler {
      * @param inputValue the number to insert into the change detector
      */
     public void input(double inputValue);
+
+    public void input(Instance inputValue);
+
 
     /**
      * Gets whether there is change detected.
