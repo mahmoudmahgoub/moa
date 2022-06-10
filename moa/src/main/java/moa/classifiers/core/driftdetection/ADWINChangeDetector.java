@@ -31,7 +31,7 @@ import moa.tasks.TaskMonitor;
  *
  *
  * @author Albert Bifet (abifet at cs dot waikato dot ac dot nz)
- * @version $Revision: 7 $
+ * @version $Revision: 7 $DDM
  */
 public class ADWINChangeDetector extends AbstractChangeDetector {
 
@@ -46,11 +46,12 @@ public class ADWINChangeDetector extends AbstractChangeDetector {
         if (this.adwin == null) {
             resetLearning();
         }
+        this.isChangeDetected = false;
         double ErrEstim = this.adwin.getEstimation();
         if(adwin.setInput(inputValue)) {
-            if (this.adwin.getEstimation() > ErrEstim) {
+            //if (this.adwin.getEstimation() > ErrEstim) {
                 this.isChangeDetected = true;
-            }
+        //    }
         }
         this.isWarningZone = false;
         this.delay = 0.0;
