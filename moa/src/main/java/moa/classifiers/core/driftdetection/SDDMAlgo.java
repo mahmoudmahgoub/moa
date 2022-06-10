@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 
 public class SDDMAlgo {
@@ -213,22 +214,7 @@ public class SDDMAlgo {
     double getJointShift(List<List<Double>> trainData,List<List<Double>>  testData,Set<Integer> cols){
         // if len(cols) == 1 and cols[0] == "":  return 0 //todo add this check which is found in python
         //todo check target_column
-        /*
-        List<List<Double>> modifiedTrainData = new ArrayList<>(trainData.stream().map(x -> new ArrayList<>(x)).collect(Collectors.toList()));
-        List<List<Double>> modifiedTestData = new ArrayList<>(testData.stream().map(x -> new ArrayList<>(x)).collect(Collectors.toList()));
 
-        for(List<Double> Instance:modifiedTrainData) {
-            for (int i = 0; i < Instance.size(); i++) {
-                if (!cols.contains(i))
-                    Instance.remove(i);
-            }
-        }
-            for(List<Double> Instance:modifiedTestData){
-                for(int i = 0; i<Instance.size();i++){
-                    if (!cols.contains(i))
-                        Instance.remove(i);
-                }
-        }*/
         List<List<Double>> modifiedTrainData = new ArrayList<>();
         List<List<Double>> modifiedTestData = new ArrayList<>();
 
@@ -310,18 +296,6 @@ public class SDDMAlgo {
         List<List<Double>> modifiedTrainData = trainData.stream().map(ArrayList::new).collect(Collectors.toList());
         List<List<Double>> modifiedTestData = testData.stream().map(ArrayList::new).collect(Collectors.toList());
 
-       /* for(List<Double> Instance:modifiedTrainData) {
-            for (int i = 0; i < Instance.size(); i++) {
-                if (!cols.contains(i))
-                    Instance.remove(i);
-            }
-        }
-        for(List<Double> Instance:modifiedTestData){
-            for(int i = 0; i<Instance.size();i++){
-                if (!cols.contains(i))
-                    Instance.remove(i);
-            }
-        }*/
         int colsSize = cols.size();
         Map<InstancesGrouping, Double> weightsGroupedTrain = modifiedTrainData.stream().collect(Collectors.groupingBy(
                 instance -> new InstancesGrouping(instance, colsSize), Collectors.collectingAndThen(Collectors.counting(),aLong -> 1.0*aLong /modifiedTrainData.size())));

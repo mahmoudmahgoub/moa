@@ -28,6 +28,7 @@ import moa.capabilities.ImmutableCapabilities;
 import moa.classifiers.AbstractClassifier;
 import moa.classifiers.Classifier;
 import moa.classifiers.MultiClassClassifier;
+import moa.classifiers.core.driftdetection.SDDM;
 import moa.classifiers.meta.WEKAClassifier;
 import moa.core.Measurement;
 import moa.core.Utils;
@@ -114,7 +115,11 @@ public class DriftDetectionMethodClassifier extends AbstractClassifier implement
             prediction = false;
         }
         //this.ddmLevel = this.driftDetectionMethod.computeNextVal(prediction);
-        this.driftDetectionMethod.input(prediction ? 0.0 : 1.0);
+        if(this.driftDetectionMethod.getClass()== SDDM.class)
+            this.driftDetectionMethod.input(inst);
+        else
+         this.driftDetectionMethod.input(prediction ? 0.0 : 1.0);
+
         this.ddmLevel = DDM_INCONTROL_LEVEL;
         if (this.driftDetectionMethod.getChange()) {
          this.ddmLevel =  DDM_OUTCONTROL_LEVEL;

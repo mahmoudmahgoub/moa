@@ -28,8 +28,12 @@ import moa.core.ObjectRepository;
 import moa.streams.ArffFileStream;
 import moa.tasks.TaskMonitor;
 
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -72,6 +76,13 @@ public class SDDM extends AbstractChangeDetector {
     public IntOption widthOption = new IntOption("width",
             'w', "Size of Window", 1000);
 
+    public FloatOption driftThresholdOption = new FloatOption("driftThreshold",
+            'o', "threshold to accept drift", 0.6);
+
+    public IntOption instanceLimitOption = new IntOption("streamsize", 'i',
+            "Maximum number of instances to test/train on  (-1 = no limit).",
+            100000000, -1, Integer.MAX_VALUE);
+
     public MultiChoiceOption distanceMeasureOption = new MultiChoiceOption("distanceMeasure", 'd',
             "//todo", new java.lang.String[]{
             "KLD", "Hellinger", "TVD"},
@@ -90,6 +101,8 @@ public class SDDM extends AbstractChangeDetector {
             2);
 
 
+
+   private static int fileReadFlag = 0;
     private static final double FDDM_OUTCONTROL = 0.9;
 
     private static final double FDDM_WARNING = 0.95;
@@ -119,8 +132,14 @@ public class SDDM extends AbstractChangeDetector {
     private int bins = 20;
     private int subSampleFraction = 1;
     private int width;
+    private double driftThreshold = 0.6;
     public ArrayList<Instance> window;
+    private  SDDMAlgo sddmObjGui;
+    private List < Instance > fileDataGui = new ArrayList<>();
+    int maxInstances = 1000;
+    int  buffer_size = 960; //drift+time_step 550
     //int predictionOption = this.leafpredictionOption.getChosenIndex();
+    int noDriftsGui = 0;
 
     public SDDM() {
         resetLearning();
@@ -140,11 +159,14 @@ public class SDDM extends AbstractChangeDetector {
 */
     @Override
     public void resetLearning() {
+
         normalizationCoefficient = this.normalizationCoefficientOption.getValue();
         weightUnique = this.weightUniqueOption.getValue();
         bins = this.binsOption.getValue();
         subSampleFraction = this.subSampleFractionOption.getValue();
         width = this.widthOption.getValue();
+        driftThreshold = this.driftThresholdOption.getValue();
+        maxInstances = this.instanceLimitOption.getValue();
         /*m_n = 1;
         m_numErrors = 0;
         m_d = 0;
@@ -158,76 +180,83 @@ public class SDDM extends AbstractChangeDetector {
 
     @Override
     public void input(double prediction) {
-        // prediction must be 1 or 0
-        // It monitors the error rate
-        // System.out.print(prediction + " " + m_n + " " + probability + " ");
-        if (this.isChangeDetected == true || this.isInitialized == false) {
-            resetLearning();
-            this.isInitialized = true;
-        }
-
-        this.isChangeDetected = false;
-
-        m_n++;
-        if (prediction == 1.0) {
-            this.isWarningZone = false;
-            this.delay = 0;
-            m_numErrors += 1;
-            m_lastd = m_d;
-            m_d = m_n - 1;
-            int distance = m_d - m_lastd;
-            double oldmean = m_mean;
-            m_mean = m_mean + ((double) distance - m_mean) / m_numErrors;
-            this.estimation = m_mean;
-            m_stdTemp = m_stdTemp + (distance - m_mean) * (distance - oldmean);
-            double std = Math.sqrt(m_stdTemp / m_numErrors);
-            double m2s = m_mean + 2 * std;
-
-            // System.out.print(m_numErrors + " " + m_mean + " " + std + " " +
-            // m2s + " " + m_m2smax + " ");
-
-            if (m2s > m_m2smax) {
-                if (m_n > FDDM_MINNUMINSTANCES) {
-                    m_m2smax = m2s;
-                }
-                //m_lastLevel = DDM_INCONTROL_LEVEL;
-                // System.out.print(1 + " ");
-            } else {
-                double p = m2s / m_m2smax;
-                // System.out.print(p + " ");
-                if (m_n > FDDM_MINNUMINSTANCES && m_numErrors > m_minNumErrors
-                        && p < FDDM_OUTCONTROL) {
-                    //System.out.println(m_mean + ",D");
-                    this.isChangeDetected = true;
-                    //resetLearning();
-                    //return DDM_OUTCONTROL_LEVEL;
-                } else if (m_n > FDDM_MINNUMINSTANCES
-                        && m_numErrors > m_minNumErrors && p < FDDM_WARNING) {
-                    //System.out.println(m_mean + ",W");
-                    //m_lastLevel = DDM_WARNING_LEVEL;
-                    this.isWarningZone = true;
-                    //return DDM_WARNING_LEVEL;
-                } else {
-                    this.isWarningZone = false;
-                    //System.out.println(m_mean + ",N");
-                    //m_lastLevel = DDM_INCONTROL_LEVEL;
-                    //return DDM_INCONTROL_LEVEL;
-                }
-            }
-        } else {
-            // System.out.print(m_numErrors + " " + m_mean + " " +
-            // Math.sqrt(m_stdTemp/m_numErrors) + " " + (m_mean +
-            // 2*Math.sqrt(m_stdTemp/m_numErrors)) + " " + m_m2smax + " ");
-            // System.out.print(((m_mean +
-            // 2*Math.sqrt(m_stdTemp/m_numErrors))/m_m2smax) + " ");
-        }
+         System.out.print("HELLLO");
     }
 
     @Override
-    public void input(Instance prediction) {
+    public void input(Instance inst) {
+       // System.out.println("start");
+        fileReadFlag++;
+        if (this.isChangeDetected == true || this.isInitialized == false) {
+            resetLearning();
+            System.out.println("init");
+            this.isInitialized = true;
+        }
+        //int time_step =500,drift =50;
+        this.isChangeDetected = false;
+        //for(int i = time_step;i<file_data.size();i+=drift){
+        // covariatecolumns = cols without target col
+        //if(fileReadFlag<maxInstances) {
+            if(fileReadFlag<buffer_size) {
+            fileDataGui.add(inst);
+        }
+        else if(fileReadFlag == buffer_size) {
+            fileDataGui.add(inst);
 
-        System.out.println("Hello Taa7");
+            sddmObjGui = new SDDMAlgo(5, 0);
+            List<Instance> train;
+            List<Instance> test;
+            sddmObjGui.setNumClassLabels(fileDataGui.get(0).numClasses());
+            sddmObjGui.setTargetColumn(fileDataGui.get(0).numAttributes() - 1);
+            int time_step = 900, drift = 60;
+            Reader SDDMReader = new Reader();
 
+            System.out.println("Hello Taa7");
+
+
+            //this.isChangeDetected = false;
+            List<Map<String, Double>> results = new ArrayList<>();
+
+            //for (int i : SDDMReader.npRange(time_step, fileDataGui.size(), drift)) { // #time step is window size length drift window slide
+                //train = fileDataGui.subList(i - time_step, i);
+               // int EndOfArr = Math.min(fileDataGui.size(), i + drift);  // for the final step to avoid out of index
+               // test = fileDataGui.subList(i, EndOfArr);
+                train = fileDataGui.subList(0, time_step);
+                test = fileDataGui.subList(time_step,time_step+drift);
+                sddmObjGui.binsIntervalsBuilder(train);
+                List<List<Double>> binnedTrain = null;
+                try {
+                    binnedTrain = sddmObjGui.binData(train);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                List<List<Double>> binnedTest = null;
+                try {
+                    binnedTest = sddmObjGui.binData(test);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                Set<Integer> covariateColumns = new HashSet<>(Arrays.asList(0, 1));
+                Map<String, Double> res = sddmObjGui.getJointResults(binnedTrain, binnedTest, covariateColumns);
+             //   System.out.println("Drift" + i+ " "+results.size());
+                if (res.get("conceptdrift") > .04) {//.3conceptdriftclassshift
+                    //      System.out.println("Drift" + i+ " "+results.size());
+                    this.isChangeDetected = true;
+                    noDriftsGui++;
+                    //og.println(true);
+                } else {
+                    //og.println(false);
+                }
+                results.add(res);
+                // sddmObj.getJointShift(binnedTrain,binnedTest,covariateColumns);
+                //sddmObj.getConditionalCovariateDrift(binnedTrain,binnedTest,covariateColumns);
+                //sddmObj.getPosteriorDrift(binnedTrain,binnedTest,covariateColumns);
+            //}
+                fileReadFlag = 0;
+                fileDataGui.clear();
+            System.out.println("SDDM drifts:" + noDriftsGui);
+
+        }
 
 }
 
@@ -256,7 +285,6 @@ public class SDDM extends AbstractChangeDetector {
 
 
     public static void main(String[] args) throws Exception {
-
         SDDMAlgo sddmObj = new SDDMAlgo(5, 0);
 
        // covariatecolumns = cols without target col
@@ -265,7 +293,16 @@ public class SDDM extends AbstractChangeDetector {
         List < Instance > train;
         List < Instance > test;
         //moa.streams.ArffFileStream stream = new ArffFileStream("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\sine1\\sine1_w_50_n_0.1_102.arff", -1);
-        moa.streams.ArffFileStream stream = new ArffFileStream("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\sine full\\sine1_w_50_n_0.1_101.arff", -1);
+        //moa.streams.ArffFileStream stream = new ArffFileStream("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\sine full\\sine1_w_50_n_0.1_101.arff", -1);
+        //moa.streams.ArffFileStream stream = new ArffFileStream("E:\\offline Thesis work\\originaladwin++\\datasets\\sine1_w_50_n_0.1_101.arff",-1);
+        //moa.streams.ArffFileStream stream = new ArffFileStream("E:\\offline Thesis work\\originaladwin++\\datasets\\Incremental datasets\\1554_drifts_dataset.arff",-1);
+        //moa.streams.ArffFileStream stream = new ArffFileStream("E:\\offline Thesis work\\originaladwin++\\datasets\\Gradual datasets\\1738_drifts_dataset.arff",-1);
+        //moa.streams.ArffFileStream stream = new ArffFileStream("E:\\offline Thesis work\\originaladwin++\\datasets\\Abrupt datasets\\1283_drifts_dataset.arff",-1);
+        //moa.streams.ArffFileStream stream = new ArffFileStream("E:\\offline Thesis work\\originaladwin++\\datasets\\Gradual datasets\\10_drifts_dataset.arff",-1);
+       // moa.streams.ArffFileStream stream = new ArffFileStream("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\usp-stream-data\\elec.arff",-1);//
+        //moa.streams.ArffFileStream stream = new ArffFileStream("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\usp-stream-data\\airlines.arff",-1);//
+       moa.streams.ArffFileStream stream = new ArffFileStream("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\data\\usp-stream-data\\INSECTS-abrupt_balanced_norm.arff",-1);//
+
 
         while (stream.hasMoreInstances() ) {
              file_data.add(stream.nextInstance().getData());
@@ -280,7 +317,13 @@ public class SDDM extends AbstractChangeDetector {
             return new result_row[5];
         }).collect(Collectors.toList());*/
         List<Map<String, Double>> results = new ArrayList<>();
+        int no_drifts=0;
+        //PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\SDDMdrifts"+"elec"));
+        //PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\SDDMdrifts"+"airlines"));
+
+        long startTime = System.currentTimeMillis();
         for(int i:SDDMReader.npRange(time_step,file_data.size(),drift)){ // #time step is window size length drift window slide
+       // for(int i = time_step;i<file_data.size();i=+drift){
             train = file_data.subList(i-time_step,i);
             int EndOfArr = Math.min(file_data.size(), i+drift);  // for the final step to avoid out of index
             test = file_data.subList(i,EndOfArr);
@@ -289,14 +332,25 @@ public class SDDM extends AbstractChangeDetector {
             List<List<Double>> binnedTest = sddmObj.binData(test);
             Set<Integer> covariateColumns = new HashSet<>(Arrays.asList(0,1));
             Map<String, Double> res = sddmObj.getJointResults(binnedTrain,binnedTest,covariateColumns);
-            if(res.get("conceptdrift")>.6) {
-                System.out.println("Drift" + i+ " "+results.size());
+            //System.out.println("Drift" + i+ " "+results.size());
+            boolean detected_drift = (res.get("conceptdrift")>.04);
+            PrintWriter og = new PrintWriter(new FileWriter("C:\\Users\\MahmoudMahgoub\\Desktop\\thesis python\\results\\SDDMdrifts"+"2"));
+            og.println(detected_drift);
+            if(detected_drift) {//.3
+                //System.out.println("Drift" + i+ " "+results.size());
+                no_drifts++;
+
             }
+
             results.add(res);
            // sddmObj.getJointShift(binnedTrain,binnedTest,covariateColumns);
             //sddmObj.getConditionalCovariateDrift(binnedTrain,binnedTest,covariateColumns);
             //sddmObj.getPosteriorDrift(binnedTrain,binnedTest,covariateColumns);
         }
-        System.out.println("fd");
+        long endTime   = System.currentTimeMillis();
+        NumberFormat formatter = new DecimalFormat("#0.00000");
+        System.out.print("Execution time is " + formatter.format((endTime - startTime) / 1000d) + " seconds");
+        System.out.println("SDDM drifts:"+no_drifts);
+
     }
 }
